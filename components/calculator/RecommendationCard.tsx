@@ -15,16 +15,20 @@ interface RecommendationCardProps {
 
 const urgencyColors: Record<string, string> = {
   high: Colors.danger,
-  medium: Colors.warning,
-  low: Colors.accent,
-  routine: Colors.success,
+  moderate: Colors.warning,
+  watch: Colors.accent,
+};
+
+const urgencyLabels: Record<string, string> = {
+  high: "HIGH PRIORITY",
+  moderate: "MODERATE",
+  watch: "SURVEILLANCE",
 };
 
 const urgencyVariant: Record<string, "danger" | "warning" | "outlined" | "default"> = {
   high: "danger",
-  medium: "warning",
-  low: "outlined",
-  routine: "default",
+  moderate: "warning",
+  watch: "outlined",
 };
 
 export function RecommendationCard({
@@ -60,11 +64,23 @@ export function RecommendationCard({
         >
           {title}
         </Text>
-        <Badge
-          label={guidelineClass}
-          color={color}
-          textColor={Colors.white}
-        />
+        <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+          <Text
+            style={{
+              color: color,
+              fontSize: 9,
+              fontWeight: "700",
+              letterSpacing: 0.5,
+            }}
+          >
+            {urgencyLabels[urgency] ?? urgency.toUpperCase()}
+          </Text>
+          <Badge
+            label={`Class ${guidelineClass}`}
+            color={color}
+            textColor={Colors.white}
+          />
+        </View>
       </View>
 
       <Text
