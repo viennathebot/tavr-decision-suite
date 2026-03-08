@@ -16,7 +16,7 @@ interface Thresholds {
 }
 
 const maleThresholds: Thresholds = {
-  nonSevereMax: 1599,
+  nonSevereMax: 1199,
   indeterminateMax: 1999,
   severeMin: 2000,
 };
@@ -156,7 +156,7 @@ export function CalciumInterpretation({
             style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.success, marginRight: 8, marginTop: 2 }}
           />
           <Text style={{ color: Colors.primary, fontSize: 12 }}>
-            Non-severe: {"<"}{sex === "male" ? "1600" : "800"} AU
+            Non-severe: {"<"}{sex === "male" ? "1200" : "800"} AU
           </Text>
         </View>
 
@@ -165,7 +165,7 @@ export function CalciumInterpretation({
             style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.warning, marginRight: 8, marginTop: 2 }}
           />
           <Text style={{ color: Colors.primary, fontSize: 12 }}>
-            Indeterminate: {sex === "male" ? "1600-1999" : "800-1199"} AU
+            Indeterminate: {sex === "male" ? "1200-1999" : "800-1199"} AU
           </Text>
         </View>
 
