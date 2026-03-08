@@ -7,6 +7,7 @@ interface SizingRow {
   annulusPerimeterRange?: [number, number];
   annulusDiameterRange?: [number, number];
   sheathSize?: string;
+  minVesselDiameter?: number;
 }
 
 interface NativeSizingTableProps {
@@ -16,6 +17,7 @@ interface NativeSizingTableProps {
   sizes: SizingRow[];
   notes?: string;
   highlightArea?: number;
+  pacemakerRate?: string;
 }
 
 export function NativeSizingTable({
@@ -25,6 +27,7 @@ export function NativeSizingTable({
   sizes,
   notes,
   highlightArea,
+  pacemakerRate,
 }: NativeSizingTableProps) {
   const getHighlightForRow = (row: SizingRow): boolean => {
     if (highlightArea === undefined) return false;
@@ -46,23 +49,39 @@ export function NativeSizingTable({
         <Text style={{ color: Colors.primary, fontSize: 15, fontWeight: "700", flex: 1 }}>
           {manufacturer} {model}
         </Text>
-        <View
-          style={{
-            backgroundColor: selfExpanding ? Colors.warning + "20" : Colors.accent + "20",
-            borderRadius: 4,
-            paddingHorizontal: 6,
-            paddingVertical: 2,
-          }}
-        >
-          <Text
+        <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
+          {pacemakerRate && (
+            <View
+              style={{
+                backgroundColor: Colors.danger + "15",
+                borderRadius: 4,
+                paddingHorizontal: 5,
+                paddingVertical: 2,
+              }}
+            >
+              <Text style={{ color: Colors.danger, fontSize: 9, fontWeight: "600" }}>
+                PPM {pacemakerRate}
+              </Text>
+            </View>
+          )}
+          <View
             style={{
-              color: selfExpanding ? Colors.warning : Colors.accent,
-              fontSize: 9,
-              fontWeight: "600",
+              backgroundColor: selfExpanding ? Colors.warning + "20" : Colors.accent + "20",
+              borderRadius: 4,
+              paddingHorizontal: 6,
+              paddingVertical: 2,
             }}
           >
-            {selfExpanding ? "Self-Expanding" : "Balloon-Expandable"}
-          </Text>
+            <Text
+              style={{
+                color: selfExpanding ? Colors.warning : Colors.accent,
+                fontSize: 9,
+                fontWeight: "600",
+              }}
+            >
+              {selfExpanding ? "Self-Expanding" : "Balloon-Expandable"}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -87,7 +106,10 @@ export function NativeSizingTable({
               <Text style={[headerCell, { width: 110 }]}>Diameter (mm)</Text>
             )}
             {sizes[0]?.sheathSize && (
-              <Text style={[headerCell, { width: 60 }]}>Sheath</Text>
+              <Text style={[headerCell, { width: 80 }]}>Sheath</Text>
+            )}
+            {sizes[0]?.minVesselDiameter && (
+              <Text style={[headerCell, { width: 70 }]}>Min Vessel</Text>
             )}
           </View>
 
@@ -134,7 +156,12 @@ export function NativeSizingTable({
                   </Text>
                 )}
                 {row.sheathSize && (
-                  <Text style={[dataCell, { width: 60 }]}>{row.sheathSize}</Text>
+                  <Text style={[dataCell, { width: 80 }]}>{row.sheathSize}</Text>
+                )}
+                {row.minVesselDiameter && (
+                  <Text style={[dataCell, { width: 70 }]}>
+                    {row.minVesselDiameter.toFixed(1)}mm
+                  </Text>
                 )}
               </View>
             );

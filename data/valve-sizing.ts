@@ -47,7 +47,7 @@ export const SAPIEN_3: TAVRValveModel = {
       annulusPerimeterRange: [65.2, 73.6],
       annulusDiameterRange: [19.5, 23.0],
       sheathSize: '14F eSheath',
-      minVesselDiameter: 5.0,
+      minVesselDiameter: 5.5,
       notes: 'Most common size for smaller annuli',
     },
     {
@@ -65,13 +65,13 @@ export const SAPIEN_3: TAVRValveModel = {
       annulusPerimeterRange: [82.8, 92.7],
       annulusDiameterRange: [26.0, 29.0],
       sheathSize: '16F eSheath',
-      minVesselDiameter: 5.5,
+      minVesselDiameter: 6.0,
       notes: 'Largest SAPIEN 3; for perimeter >82.8 mm',
     },
   ],
   generalNotes:
     'Balloon-expandable valve. Sizing based on CT annulus area and perimeter. ' +
-    'eSheath expandable delivery system allows smaller access vessel requirement (5.0-5.5mm). ' +
+    'eSheath expandable delivery system (Commander). Min vessel: 5.0mm (20mm), 5.5mm (23/26mm), 6.0mm (29mm). ' +
     'Pacemaker rate 6-8% (PARTNER 3). Overlap zones between sizes require clinical judgment.',
 };
 
@@ -90,7 +90,7 @@ export const SAPIEN_3_ULTRA: TAVRValveModel = {
       annulusDiameterRange: [18.0, 21.0],
       sheathSize: '14F eSheath',
       minVesselDiameter: 5.0,
-      notes: 'Ultra: textured PET outer skirt for reduced PVL',
+      notes: 'Ultra/RESILIA: textured PET outer skirt for reduced PVL',
     },
     {
       size: 23,
@@ -98,7 +98,7 @@ export const SAPIEN_3_ULTRA: TAVRValveModel = {
       annulusPerimeterRange: [65.2, 73.6],
       annulusDiameterRange: [19.5, 23.0],
       sheathSize: '14F eSheath',
-      minVesselDiameter: 5.0,
+      minVesselDiameter: 5.5,
     },
     {
       size: 26,
@@ -114,13 +114,14 @@ export const SAPIEN_3_ULTRA: TAVRValveModel = {
       annulusPerimeterRange: [82.8, 92.7],
       annulusDiameterRange: [26.0, 29.0],
       sheathSize: '16F eSheath',
-      minVesselDiameter: 5.5,
+      minVesselDiameter: 6.0,
     },
   ],
   generalNotes:
     'Balloon-expandable valve with textured outer skirt for enhanced paravalvular sealing. ' +
     'RESILIA tissue treated with INTEGRITY preservation for improved durability. ' +
-    'Same sizing chart as SAPIEN 3. Pacemaker rate ~6-8% (PARTNER 3).',
+    'Same sizing and delivery as SAPIEN 3. Min vessel: 5.0mm (20mm), 5.5mm (23/26mm), 6.0mm (29mm). ' +
+    'Pacemaker rate ~6-8% (PARTNER 3).',
 };
 
 // ── Medtronic Evolut PRO+ ───────────────────────────────────

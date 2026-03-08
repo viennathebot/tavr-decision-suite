@@ -48,6 +48,7 @@ export default function SizingScreen() {
           sizes={SAPIEN_3.sizes}
           notes={SAPIEN_3.generalNotes}
           highlightArea={highlightArea}
+          pacemakerRate={SAPIEN_3.pacemakerRate}
         />
         <NativeSizingTable
           manufacturer={SAPIEN_3_ULTRA.manufacturer}
@@ -56,6 +57,7 @@ export default function SizingScreen() {
           sizes={SAPIEN_3_ULTRA.sizes}
           notes={SAPIEN_3_ULTRA.generalNotes}
           highlightArea={highlightArea}
+          pacemakerRate={SAPIEN_3_ULTRA.pacemakerRate}
         />
         <NativeSizingTable
           manufacturer={EVOLUT_PRO_PLUS.manufacturer}
@@ -64,6 +66,7 @@ export default function SizingScreen() {
           sizes={EVOLUT_PRO_PLUS.sizes}
           notes={EVOLUT_PRO_PLUS.generalNotes}
           highlightArea={highlightArea}
+          pacemakerRate={EVOLUT_PRO_PLUS.pacemakerRate}
         />
         <NativeSizingTable
           manufacturer={EVOLUT_FX.manufacturer}
@@ -72,6 +75,7 @@ export default function SizingScreen() {
           sizes={EVOLUT_FX.sizes}
           notes={EVOLUT_FX.generalNotes}
           highlightArea={highlightArea}
+          pacemakerRate={EVOLUT_FX.pacemakerRate}
         />
         <NativeSizingTable
           manufacturer={NAVITOR.manufacturer}
@@ -80,6 +84,7 @@ export default function SizingScreen() {
           sizes={NAVITOR.sizes}
           notes={NAVITOR.generalNotes}
           highlightArea={highlightArea}
+          pacemakerRate={NAVITOR.pacemakerRate}
         />
         <NativeSizingTable
           manufacturer={ACURATE_NEO2.manufacturer}
@@ -88,6 +93,7 @@ export default function SizingScreen() {
           sizes={ACURATE_NEO2.sizes}
           notes={ACURATE_NEO2.generalNotes}
           highlightArea={highlightArea}
+          pacemakerRate={ACURATE_NEO2.pacemakerRate}
         />
 
         <View
