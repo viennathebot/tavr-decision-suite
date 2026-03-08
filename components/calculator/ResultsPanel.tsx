@@ -336,6 +336,33 @@ export function ResultsPanel() {
               ]}
             />
           )}
+
+          {echo.vmax !== undefined && (
+            <SeverityBar
+              label="Vmax"
+              value={echo.vmax}
+              max={6.0}
+              unit="m/s"
+              thresholds={[
+                { value: 0, color: Colors.success, label: "Mild" },
+                { value: 3.0, color: Colors.warning, label: "Moderate" },
+                { value: 4.0, color: Colors.danger, label: "Severe" },
+              ]}
+            />
+          )}
+
+          {results.svi !== undefined && (
+            <SeverityBar
+              label="SVI"
+              value={results.svi}
+              max={60}
+              unit="mL/m²"
+              thresholds={[
+                { value: 0, color: Colors.danger, label: "Low-Flow" },
+                { value: 35, color: Colors.success, label: "Normal" },
+              ]}
+            />
+          )}
         </Card>
       )}
 
