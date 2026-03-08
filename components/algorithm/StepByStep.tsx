@@ -1,364 +1,260 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { Colors } from "../../constants/theme";
-import { DecisionNode } from "./DecisionNode";
+"use client";
+
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
 
 interface AlgorithmStep {
-  stepNumber: number;
+  step: number;
   title: string;
-  description: string;
-  details: string;
-  evidence?: string;
-  guidelineClass?: "I" | "IIa" | "IIb" | "III";
+  brief: string;
+  details: string[];
+  evidence: string;
+  guidelineClass: "I" | "IIa" | "IIb" | "III";
 }
 
-const ALGORITHM_STEPS: AlgorithmStep[] = [
+const STEPS: AlgorithmStep[] = [
   {
-    stepNumber: 1,
-    title: "Confirm Echo Measurements",
-    description:
-      "Perform concordance check between aortic valve area (AVA), mean gradient (MG), and dimensionless velocity index (DVI) to determine AS severity classification.",
-    details:
-      "Concordant severe AS: AVA <1.0 cm\u00B2, MG \u226540 mmHg, DVI <0.25, Vmax >4 m/s. " +
-      "Concordant non-severe AS: AVA >1.0 cm\u00B2, MG <40 mmHg, DVI >0.25. " +
-      "Discordant findings (e.g., AVA <1.0 cm\u00B2 but MG <40 mmHg) require additional workup to resolve. " +
-      "Key principle: if AVA and gradient are concordant, the classification is straightforward and no further hemodynamic investigation is needed. " +
-      "When discordant, proceed to Step 2 to assess LVEF and flow state.",
+    step: 1,
+    title: "Initial Echocardiographic Assessment",
+    brief:
+      "Obtain baseline measurements: AVA, mean gradient, Vmax, LVEF, SVI, and DVI.",
+    details: [
+      "Measure LVOT diameter in parasternal long axis (mid-systole, inner edge to inner edge).",
+      "Obtain LVOT TVI from apical 5-chamber with pulsed-wave Doppler at the annular level.",
+      "Obtain AoV TVI from multiple windows (apical, right parasternal, suprasternal) using CW Doppler. Use the highest velocity signal.",
+      "Calculate AVA via continuity equation: AVA = (LVOT area x LVOT TVI) / AoV TVI.",
+      "Calculate DVI = LVOT TVI / AoV TVI (flow-independent check).",
+      "Measure stroke volume and calculate SVI = SV / BSA.",
+      "Report Vmax (peak aortic velocity) and mean transvalvular gradient.",
+    ],
     evidence:
-      "Baumgartner H et al. 2017 ESC/EACTS Guidelines for the management of valvular heart disease. Eur Heart J 2017;38:2739-2791.",
+      "Baumgartner H et al. JASE 2017;30:372-392. ASE/EACVI Recommendations for echocardiographic assessment of aortic stenosis.",
     guidelineClass: "I",
   },
   {
-    stepNumber: 2,
-    title: "Assess LVEF",
-    description:
-      "Classify the patient's flow state based on left ventricular ejection fraction (LVEF) to determine the subsequent workup pathway.",
-    details:
-      "LVEF \u226555%: Normal systolic function. Low gradient may be due to paradoxical low-flow state, measurement error, or genuinely moderate AS. Proceed to SVI assessment.\n\n" +
-      "LVEF 50-54%: Borderline reduced. May represent early cardiomyopathy or afterload mismatch. Consider both DSE and CT calcium pathways.\n\n" +
-      "LVEF <50%: Reduced systolic function. Classic low-flow, low-gradient pattern. Dobutamine stress echo (DSE) is the primary next step to differentiate true severe from pseudo-severe AS.\n\n" +
-      "Important: LVEF alone does not determine severity\u2014it determines the diagnostic pathway.",
+    step: 2,
+    title: "Assess Left Ventricular Ejection Fraction",
+    brief:
+      "Determine LVEF: Reduced (<50%) vs Preserved (>=50%). This branches the algorithm.",
+    details: [
+      "LVEF <50%: Reduced EF suggests possible classic low-flow low-gradient AS phenotype.",
+      "LVEF >=50%: Preserved EF with low gradient raises suspicion for paradoxical LFLG or normal-flow low-gradient AS.",
+      "Biplane Simpson method recommended for accurate LVEF quantification.",
+      "Consider 3D echo or CMR if 2D image quality is suboptimal.",
+      "Reduced LVEF shifts subsequent workup toward DSE for true-severe vs pseudo-severe differentiation.",
+    ],
     evidence:
-      "Otto CM et al. 2020 ACC/AHA Guideline for the Management of Patients With Valvular Heart Disease. J Am Coll Cardiol 2021;77(4):e25-e197.",
+      "Otto CM et al. J Am Coll Cardiol 2021;77:e25-e197. 2020 ACC/AHA VHD Guidelines.",
     guidelineClass: "I",
   },
   {
-    stepNumber: 3,
-    title: "Calculate Stroke Volume Index",
-    description:
-      "Compute stroke volume index (SVI = SV / BSA) to distinguish low-flow from normal-flow aortic stenosis patterns.",
-    details:
-      "SVI = Stroke Volume / Body Surface Area\n\n" +
-      "SVI <35 mL/m\u00B2: Low-flow state. In the setting of preserved LVEF, this defines paradoxical low-flow, low-gradient severe AS (a recognized entity with poor prognosis if untreated).\n\n" +
-      "SVI \u226535 mL/m\u00B2: Normal flow. A low gradient with normal flow and AVA <1.0 cm\u00B2 is often due to measurement error (particularly LVOT diameter underestimation) or genuinely moderate AS.\n\n" +
-      "Paradoxical low-flow occurs in patients with small ventricles, restrictive physiology, significant LVH, or atrial fibrillation. " +
-      "These patients have outcomes similar to high-gradient severe AS and benefit from intervention.",
+    step: 3,
+    title: "Assess Flow Status",
+    brief:
+      "Classify flow: Low-flow (SVI <35 mL/m2) vs Normal-flow (SVI >=35 mL/m2).",
+    details: [
+      "SVI <35 mL/m2 defines low-flow state regardless of LVEF.",
+      "Low-flow + reduced EF = Classic LFLG AS (most common low-gradient phenotype).",
+      "Low-flow + preserved EF = Paradoxical LFLG AS (restrictive physiology, small LV, concentric remodeling).",
+      "Normal-flow + low gradient = Normal-flow low-gradient (most commonly measurement error).",
+      "Flow rate (SV / ejection time) <200 mL/s is an alternative low-flow marker.",
+      "Assess systemic arterial compliance (SVI / pulse pressure): <0.6 mL/m2/mmHg indicates high afterload contributing to low flow.",
+    ],
     evidence:
-      "Hachicha Z et al. Paradoxical low-flow, low-gradient severe aortic stenosis despite preserved ejection fraction is associated with higher afterload and reduced survival. Circulation 2007;115:2856-2864.",
-  },
-  {
-    stepNumber: 4,
-    title: "Exclude Measurement Error",
-    description:
-      "Systematically review the echocardiographic study for potential sources of measurement error before pursuing further workup.",
-    details:
-      "Interactive checklist of common error sources:\n\n" +
-      "\u2022 LVOT Diameter Accuracy: Measured in mid-systole, parasternal long-axis view, inner edge to inner edge. A 1 mm error causes ~15% AVA miscalculation. Consider CT-derived LVOT area.\n\n" +
-      "\u2022 Doppler Alignment: CW Doppler must be parallel to jet direction. Misalignment >20\u00B0 leads to significant gradient underestimation. Use multiple windows (apical, right parasternal, suprasternal).\n\n" +
-      "\u2022 Blood Pressure at Time of Echo: Hypertension during the study artificially lowers gradients. Record BP at time of Doppler acquisition. Consider repeating echo with BP <140/90.\n\n" +
-      "\u2022 Body Habitus: Obesity, COPD, and chest wall deformity can limit acoustic windows and underestimate peak velocities.\n\n" +
-      "\u2022 Atrial Fibrillation: Average measurements over 5-10 cardiac cycles. Avoid post-PVC beats.",
-    evidence:
-      "Minners J et al. Inconsistencies of echocardiographic criteria for the grading of aortic valve stenosis. Eur Heart J 2008;29:1043-1048.",
-  },
-  {
-    stepNumber: 5,
-    title: "CT Aortic Valve Calcium Score",
-    description:
-      "Use non-contrast CT to quantify aortic valve calcification (AVC) as an independent, flow-independent measure of AS severity.",
-    details:
-      "Sex-specific thresholds for severe AS:\n\n" +
-      "Male:\n" +
-      "\u2022 AVC \u22652000 AU \u2192 Severe (highly likely)\n" +
-      "\u2022 AVC 1600-1999 AU \u2192 Indeterminate\n" +
-      "\u2022 AVC <1600 AU \u2192 Non-severe (likely)\n\n" +
-      "Female:\n" +
-      "\u2022 AVC \u22651200 AU \u2192 Severe (highly likely)\n" +
-      "\u2022 AVC 800-1199 AU \u2192 Indeterminate\n" +
-      "\u2022 AVC <800 AU \u2192 Non-severe (likely)\n\n" +
-      "CT AVC is particularly valuable in low-flow, low-gradient AS with preserved LVEF (paradoxical low-flow) where DSE is not informative. " +
-      "It is a Class IIa recommendation for confirming severity when echocardiography is inconclusive. " +
-      "AVC density (calcium score indexed to annulus area) may improve diagnostic accuracy in patients with very large or very small annuli.",
-    evidence:
-      "Clavel MA et al. The complex nature of discordant severe calcified aortic valve disease grading: New insights from combined Doppler echocardiographic and computed tomographic study. Circulation 2014;128(S1):A15251.",
-    guidelineClass: "IIa",
-  },
-  {
-    stepNumber: 6,
-    title: "Low-Dose Dobutamine Stress Echo",
-    description:
-      "Perform dobutamine stress echocardiography (DSE) to assess contractile (flow) reserve and differentiate true severe from pseudo-severe AS in patients with reduced LVEF.",
-    details:
-      "Protocol: Start at 5 mcg/kg/min, increase by 5 mcg/kg/min every 3-5 minutes, up to 20 mcg/kg/min maximum. Avoid higher doses (risk of ischemia/arrhythmia).\n\n" +
-      "Flow Reserve: Defined as stroke volume increase \u226520% from baseline. Present in ~60% of patients with low-flow AS.\n\n" +
-      "Interpretation:\n" +
-      "\u2022 True Severe AS: Stress AVA remains <1.0 cm\u00B2 AND stress MG \u226540 mmHg. The valve is fixed and severely stenotic; increased flow unmasks the true gradient.\n" +
-      "\u2022 Pseudo-Severe AS: Stress AVA increases >1.0 cm\u00B2 AND MG remains <40 mmHg. The valve has reserve opening capacity; the low AVA at rest was due to low cardiac output, not intrinsic valve disease.\n" +
-      "\u2022 No Flow Reserve: SV does not increase \u226520%. This is prognostically ominous but does not help distinguish true vs pseudo-severe. Consider CT calcium scoring.\n\n" +
-      "Projected AVA (AVA at a standardized flow rate of 250 mL/s) can improve classification in borderline cases.",
-    evidence:
-      "Nishimura RA et al. Low-output, low-gradient aortic stenosis in patients with depressed left ventricular systolic function: the clinical utility of the dobutamine challenge in the catheterization laboratory. Circulation 2002;106:809-813.",
-    guidelineClass: "IIa",
-  },
-  {
-    stepNumber: 7,
-    title: "Cardiac Catheterization",
-    description:
-      "Invasive hemodynamic assessment using the Gorlin formula when non-invasive evaluation remains inconclusive.",
-    details:
-      "Gorlin Formula: AVA = CO / (44.3 \u00D7 SEP \u00D7 HR \u00D7 \u221A\u0394P)\n" +
-      "Where CO = cardiac output, SEP = systolic ejection period, HR = heart rate, \u0394P = mean transvalvular pressure gradient.\n\n" +
-      "Key considerations:\n" +
-      "\u2022 Simultaneous LV-aortic pressure measurement is preferred (dual catheter technique). Pullback gradients may be unreliable.\n" +
-      "\u2022 The Gorlin formula is flow-dependent and may underestimate AVA in low-output states.\n" +
-      "\u2022 Invasive evaluation reclassifies approximately 30% of patients with discordant non-invasive findings.\n" +
-      "\u2022 Combine with coronary angiography for surgical planning.\n" +
-      "\u2022 Assess for concomitant hemodynamic lesions: pulmonary hypertension, mitral regurgitation, diastolic dysfunction.\n\n" +
-      "Reserve catheterization for cases where non-invasive testing (echo, DSE, CT calcium) has not resolved the clinical question.",
-    evidence:
-      "Rod\u00E9s-Cabau J et al. Aortic stenosis: Diagnosis and management in 2018. EuroIntervention 2018;13(18):e1827-e1842.",
-    guidelineClass: "IIa",
-  },
-  {
-    stepNumber: 8,
-    title: "Heart Team / AVR Decision",
-    description:
-      "Integrate all diagnostic data with clinical assessment through a multidisciplinary Heart Team conference to determine candidacy for aortic valve replacement (AVR).",
-    details:
-      "Data integration:\n" +
-      "\u2022 Confirmed AS severity from echo, DSE, CT calcium, and/or catheterization\n" +
-      "\u2022 Symptom status (dyspnea, angina, syncope) and exercise tolerance\n" +
-      "\u2022 STS Predicted Risk of Mortality (STS-PROM) score\n" +
-      "\u2022 Frailty assessment (5-meter walk, grip strength, serum albumin, independence in ADLs)\n" +
-      "\u2022 Comorbidity burden (porcelain aorta, prior cardiac surgery, radiation heart disease, liver disease, renal function)\n\n" +
-      "Heart Team composition: Interventional cardiologist, cardiac surgeon, imaging cardiologist, anesthesiologist, and when applicable, geriatrician or palliative care specialist.\n\n" +
-      "Decision framework:\n" +
-      "\u2022 Symptomatic severe AS with acceptable risk \u2192 AVR recommended (Class I)\n" +
-      "\u2022 Asymptomatic severe AS with LVEF <50% \u2192 AVR recommended (Class I)\n" +
-      "\u2022 Asymptomatic severe AS with rapid progression, very severe (Vmax >5), or exercise-induced symptoms \u2192 AVR reasonable (Class IIa)\n" +
-      "\u2022 Prohibitive surgical risk with life expectancy <1 year or minimal symptom improvement expected \u2192 Palliative care/medical therapy",
-    evidence:
-      "Otto CM et al. 2020 ACC/AHA Guideline for the Management of Patients With Valvular Heart Disease. J Am Coll Cardiol 2021;77(4):e25-e197.",
+      "Hachicha Z et al. Circulation 2007;115:2856-2864. Pibarot P, Dumesnil JG. JACC 2012.",
     guidelineClass: "I",
   },
   {
-    stepNumber: 9,
-    title: "TAVR vs SAVR Selection",
-    description:
-      "Select the optimal intervention modality\u2014transcatheter aortic valve replacement (TAVR) or surgical aortic valve replacement (SAVR)\u2014based on patient-specific factors.",
-    details:
-      "Factors guiding modality selection:\n\n" +
-      "\u2022 Age: Younger patients (<65) generally favor SAVR due to proven long-term durability and lower rates of paravalvular leak and pacemaker implantation. Older patients (\u226580) generally favor TAVR.\n\n" +
-      "\u2022 Surgical Risk:\n" +
-      "  - Low risk (STS <3%): Both options reasonable; shared decision-making (Class I)\n" +
-      "  - Intermediate risk (STS 3-8%): TAVR preferred in most patients\n" +
-      "  - High risk (STS >8%): TAVR recommended\n" +
-      "  - Prohibitive/inoperable: TAVR if feasible, otherwise palliative\n\n" +
-      "\u2022 Anatomy: Bicuspid valves may have suboptimal TAVR outcomes (though newer-generation devices show improvement). Heavy LVOT calcification, low coronary ostia, and horizontal aorta increase TAVR complexity. Small or heavily calcified annuli affect device sizing.\n\n" +
-      "\u2022 Access: Transfemoral preferred for TAVR. Alternative access (transaxillary, transaortic, transcaval, transcarotid) when iliofemoral anatomy is prohibitive.\n\n" +
-      "\u2022 Durability: SAVR bioprosthetic valves have 15-20 year track record. TAVR valves show excellent 5-year data with emerging 10-year results. Structural valve degeneration considerations are critical in younger patients.\n\n" +
-      "\u2022 Coronary Access: Future coronary re-access may be compromised after TAVR, particularly with supra-annular self-expanding valves or valve-in-valve procedures. Essential consideration if future PCI is anticipated.\n\n" +
-      "\u2022 Concomitant Disease: Need for CABG, mitral/tricuspid surgery, or aortic root replacement favors SAVR.",
+    step: 4,
+    title: "Check for Measurement Error",
+    brief:
+      "Systematic review: LVOT diameter, Doppler alignment, blood pressure at time of echo.",
+    details: [
+      "LVOT diameter is the most common source of error (squared in the AVA calculation).",
+      "Underestimation of LVOT diameter by 1-2 mm can reduce AVA by 10-20%.",
+      "Re-measure in zoom mode, inner-edge to inner-edge, mid-systole.",
+      "Verify CW Doppler alignment with aortic jet from multiple windows.",
+      "Check for overdrawing of spectral envelopes (use dense modal velocity).",
+      "Elevated blood pressure (SBP >140 mmHg) at echo can falsely lower transvalvular gradients.",
+      "If SBP >140 mmHg, consider repeating echo after blood pressure normalization.",
+      "Compare LVOT TVI to expected range (15-25 cm for normal flow).",
+      "DVI >=0.25 with AVA <1.0 cm2 is internally inconsistent -- recheck measurements.",
+    ],
     evidence:
-      "Mack MJ et al. Five-year outcomes of transcatheter aortic valve replacement or surgical aortic valve replacement for high surgical risk patients (PARTNER 1A). Circulation 2015;131:1540-1549. Popma JJ et al. EVOLUT Low Risk Trial. N Engl J Med 2019;380:1706-1715.",
+      "Clavel MA, Dumesnil JG, Pibarot P. Structural Heart 2018. Baumgartner H et al. JASE 2017;30:372-392.",
+    guidelineClass: "I",
+  },
+  {
+    step: 5,
+    title: "CT Aortic Valve Calcium Scoring",
+    brief:
+      "Non-contrast CT for sex-specific calcium thresholds to confirm severity independent of flow.",
+    details: [
+      "CT aortic valve calcium scoring is independent of hemodynamic conditions (flow, gradient).",
+      "Sex-specific thresholds (Clavel MA et al. JACC 2014):",
+      "Men: >=2000 AU = severe AS; 1200-1999 AU = likely severe; <1200 AU = unlikely severe.",
+      "Women: >=1200 AU = severe AS; 800-1199 AU = likely severe; <800 AU = unlikely severe.",
+      "Preferred adjudicator for paradoxical LFLG AS (preserved EF) where DSE is less reliable.",
+      "Also useful when DSE shows no contractile reserve (indeterminate result).",
+      "Dense calcium (>1300 HU) may underestimate total burden; consider calcium density index.",
+      "Use non-contrast, ECG-gated CT with Agatston scoring protocol.",
+    ],
+    evidence:
+      "Clavel MA et al. JACC Cardiovasc Imaging 2014;7:1218. Pawade T et al. Circ Cardiovasc Imaging 2017.",
+    guidelineClass: "IIa",
+  },
+  {
+    step: 6,
+    title: "Dobutamine Stress Echocardiography",
+    brief:
+      "For reduced EF: Low-dose DSE to distinguish true-severe from pseudo-severe AS.",
+    details: [
+      "Indicated primarily for classic LFLG AS (AVA <1.0 cm2, MG <40 mmHg, LVEF <50%).",
+      "Protocol: low-dose dobutamine infusion up to 20 mcg/kg/min.",
+      "At peak stress, measure AVA, mean gradient, stroke volume, and LVEF.",
+      "True-severe AS: AVA remains <1.0 cm2 with MG >=40 mmHg at peak stress.",
+      "Pseudo-severe AS: AVA increases to >=1.0 cm2 with flow augmentation (cardiomyopathy is the primary pathology).",
+      "No contractile reserve (<20% increase in SV): indeterminate result -- proceed to CT calcium scoring.",
+      "Projected AVA at normalized flow rate (250 mL/s) can be calculated for additional adjudication.",
+      "Less useful in preserved-EF LFLG because the LV cannot reliably augment flow.",
+    ],
+    evidence:
+      "Monin JL et al. Circulation 2003;108:319-324. Clavel MA et al. J Am Coll Cardiol 2021.",
+    guidelineClass: "IIa",
+  },
+  {
+    step: 7,
+    title: "Invasive Haemodynamics",
+    brief:
+      "When noninvasive testing remains inconclusive: Gorlin formula via simultaneous LV-aortic pressures.",
+    details: [
+      "Reserved for patients in whom echo, CT calcium, and DSE are all inconclusive.",
+      "Simultaneous LV and aortic pressure measurement provides the most accurate mean gradient.",
+      "Gorlin formula: AVA = flow / (44.3 x sqrt(mean gradient)).",
+      "Flow = cardiac output / (HR x systolic ejection period).",
+      "Thermodilution or Fick method for cardiac output measurement.",
+      "Catheter entrapment in a severely stenotic valve must be avoided.",
+      "Consider invasive evaluation during diagnostic coronary angiography to minimize additional procedures.",
+    ],
+    evidence:
+      "Rodes-Cabau J et al. EuroIntervention 2018. Gorlin R & Gorlin SG. Am Heart J 1951;41:1-29.",
+    guidelineClass: "IIb",
+  },
+  {
+    step: 8,
+    title: "Heart Team Discussion",
+    brief:
+      "Integrate all imaging, clinical data, and patient factors for a consensus decision.",
+    details: [
+      "Multidisciplinary review: interventional cardiologist, cardiac surgeon, imaging specialist, anesthesiologist.",
+      "Review: AS severity classification, symptom status, frailty, comorbidities, life expectancy.",
+      "Incorporate STS-PROM score, frailty assessment (5-meter walk, grip strength, ADLs).",
+      "Stage cardiac damage per Genereux classification (Stages 0-4).",
+      "Assess coronary artery disease: concomitant CABG may favor SAVR.",
+      "Evaluate vascular access for TAVR (CT angiography of iliofemoral arteries).",
+      "Assess annular anatomy for TAVR sizing (CT measurement of annulus area, perimeter, diameter).",
+      "Discuss patient goals of care, preferences, and values.",
+      "Consider futility in extreme-risk patients (severe frailty, advanced dementia, ESRD).",
+    ],
+    evidence:
+      "Otto CM et al. J Am Coll Cardiol 2021;77:e25-e197. 2020 ACC/AHA VHD Guidelines, Class I.",
+    guidelineClass: "I",
+  },
+  {
+    step: 9,
+    title: "TAVR vs SAVR Decision",
+    brief:
+      "Select intervention based on surgical risk, anatomy, durability considerations, and patient preference.",
+    details: [
+      "Low risk (STS <3%): Both TAVR and SAVR are Class I. Age <65: consider SAVR for durability. Age >=65: TAVR reasonable (PARTNER 3, Evolut Low Risk).",
+      "Intermediate risk (STS 3-8%): Both TAVR and SAVR are Class I. Heart Team discussion for shared decision-making.",
+      "High risk (STS 8-15%): TAVR generally preferred (Class I). PARTNER 1, CoreValve High Risk.",
+      "Extreme/prohibitive risk (STS >15%): TAVR recommended if expected survival >12 months with acceptable QOL.",
+      "Anatomic considerations favoring SAVR: bicuspid valve (young patients), ascending aortic aneurysm, concomitant CABG or mitral surgery.",
+      "Anatomic considerations favoring TAVR: prior sternotomy (porcelain aorta, hostile chest), frailty, severe comorbidity.",
+      "Valve durability: TAVR durability data extends to 5-8 years; younger patients may require re-intervention.",
+      "Transfemoral TAVR preferred when vascular access is suitable; alternative access (transaxillary, transaortic) if TF is not feasible.",
+    ],
+    evidence:
+      "Mack MJ et al. NEJM 2019 (PARTNER 3); Popma JJ et al. NEJM 2019 (Evolut Low Risk); Leon MB et al. NEJM 2016 (PARTNER 2).",
     guidelineClass: "I",
   },
 ];
 
-export function StepByStep() {
-  const [expandedStep, setExpandedStep] = useState<number | null>(null);
+const classVariant: Record<string, "gold" | "success" | "warning" | "muted"> = {
+  I: "success",
+  IIa: "gold",
+  IIb: "warning",
+  III: "muted",
+};
 
-  const handleStepPress = (stepNumber: number) => {
-    setExpandedStep((prev) => (prev === stepNumber ? null : stepNumber));
+export function StepByStep() {
+  const [expanded, setExpanded] = useState<number | null>(0);
+
+  const toggle = (idx: number) => {
+    setExpanded((prev) => (prev === idx ? null : idx));
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          Aortic Stenosis Evaluation Algorithm
-        </Text>
-        <Text style={styles.headerSubtitle}>
-          9-step clinical pathway for discordant AS grading and TAVR/SAVR
-          decision-making
-        </Text>
-      </View>
+    <div className="space-y-3">
+      {STEPS.map((s, idx) => {
+        const isOpen = expanded === idx;
+        return (
+          <div
+            key={s.step}
+            className="border border-navy-600 rounded-xl overflow-hidden"
+          >
+            <button
+              onClick={() => toggle(idx)}
+              className="w-full flex items-start gap-4 px-4 py-3 bg-navy-800 hover:bg-navy-700 transition-colors text-left"
+            >
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center">
+                <span className="text-sm font-bold text-gold">{s.step}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-semibold text-slate-200">
+                    {s.title}
+                  </span>
+                  <Badge variant={classVariant[s.guidelineClass] ?? "muted"}>
+                    Class {s.guidelineClass}
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">{s.brief}</p>
+              </div>
+              <ChevronDown
+                size={16}
+                className={`text-slate-400 transition-transform mt-1 shrink-0 ${
+                  isOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
 
-      {/* Legend */}
-      <View style={styles.legend}>
-        <Text style={styles.legendTitle}>Guideline Recommendation Classes</Text>
-        <View style={styles.legendRow}>
-          <View style={styles.legendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: Colors.success }]}
-            />
-            <Text style={styles.legendText}>Class I</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: Colors.accent }]}
-            />
-            <Text style={styles.legendText}>Class IIa</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: Colors.warning }]}
-            />
-            <Text style={styles.legendText}>Class IIb</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: Colors.danger }]}
-            />
-            <Text style={styles.legendText}>Class III</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Algorithm Steps */}
-      {ALGORITHM_STEPS.map((step) => (
-        <View key={step.stepNumber}>
-          <DecisionNode
-            stepNumber={step.stepNumber}
-            title={step.title}
-            description={step.description}
-            details={step.details}
-            evidence={step.evidence}
-            guidelineClass={step.guidelineClass}
-            isActive={expandedStep === step.stepNumber}
-            onPress={() => handleStepPress(step.stepNumber)}
-          />
-          {/* Connector line between steps */}
-          {step.stepNumber < ALGORITHM_STEPS.length && (
-            <View style={styles.connector}>
-              <View style={styles.connectorLine} />
-              <View style={styles.connectorArrow} />
-            </View>
-          )}
-        </View>
-      ))}
-
-      {/* Footer Disclaimer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          This algorithm is intended as a clinical decision-support tool and
-          does not replace clinical judgment. All management decisions should be
-          made in the context of individual patient characteristics and
-          institutional expertise.
-        </Text>
-      </View>
-    </ScrollView>
+            {isOpen && (
+              <div className="px-4 py-4 bg-navy-800/50 border-t border-navy-600">
+                <ul className="space-y-2">
+                  {s.details.map((d, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-2 text-xs text-slate-300"
+                    >
+                      <span className="text-gold mt-0.5 shrink-0">-</span>
+                      <span>{d}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-4 px-3 py-2 bg-navy-700/50 rounded-lg">
+                  <p className="text-[10px] text-slate-500">
+                    <span className="text-slate-400 font-medium">Evidence: </span>
+                    {s.evidence}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 20,
-  },
-  headerTitle: {
-    color: Colors.white,
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  headerSubtitle: {
-    color: Colors.muted,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  legend: {
-    backgroundColor: Colors.card,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
-    padding: 12,
-    marginBottom: 20,
-  },
-  legendTitle: {
-    color: Colors.muted,
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  legendRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    color: Colors.primary,
-    fontSize: 12,
-  },
-  connector: {
-    alignItems: "center",
-    height: 24,
-    justifyContent: "center",
-  },
-  connectorLine: {
-    width: 2,
-    height: 16,
-    backgroundColor: Colors.accent + "40",
-  },
-  connectorArrow: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 5,
-    borderRightWidth: 5,
-    borderTopWidth: 6,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    borderTopColor: Colors.accent + "40",
-  },
-  footer: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: Colors.card,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
-  },
-  footerText: {
-    color: Colors.muted,
-    fontSize: 11,
-    lineHeight: 16,
-    fontStyle: "italic",
-    textAlign: "center",
-  },
-});
-
-export default StepByStep;

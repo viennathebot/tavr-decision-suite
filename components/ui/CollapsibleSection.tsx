@@ -1,13 +1,13 @@
+"use client";
+
 import { useState } from "react";
-import { View, Text, Pressable } from "react-native";
-import { ChevronDown, ChevronRight } from "lucide-react-native";
-import { Colors } from "../../constants/theme";
+import { ChevronDown } from "lucide-react";
 
 interface CollapsibleSectionProps {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
-  badge?: string;
+  badge?: React.ReactNode;
 }
 
 export function CollapsibleSection({
@@ -19,48 +19,21 @@ export function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <View style={{ marginVertical: 6 }}>
-      <Pressable
-        onPress={() => setOpen(!open)}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          paddingVertical: 10,
-          paddingHorizontal: 4,
-        }}
+    <div className="border border-navy-600 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-navy-800 hover:bg-navy-700 transition-colors"
       >
-        {open ? (
-          <ChevronDown size={18} color={Colors.accent} />
-        ) : (
-          <ChevronRight size={18} color={Colors.muted} />
-        )}
-        <Text
-          style={{
-            color: Colors.primary,
-            fontSize: 15,
-            fontWeight: "700",
-            marginLeft: 8,
-            flex: 1,
-          }}
-        >
-          {title}
-        </Text>
-        {badge && (
-          <View
-            style={{
-              backgroundColor: Colors.accent + "20",
-              borderRadius: 4,
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-            }}
-          >
-            <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: "600" }}>
-              {badge}
-            </Text>
-          </View>
-        )}
-      </Pressable>
-      {open && <View style={{ paddingLeft: 4 }}>{children}</View>}
-    </View>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-slate-200">{title}</span>
+          {badge}
+        </div>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && <div className="p-4 bg-navy-800/50">{children}</div>}
+    </div>
   );
 }

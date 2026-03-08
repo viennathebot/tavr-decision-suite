@@ -1,242 +1,122 @@
-import { View, Text } from "react-native";
-import { Card } from "../ui/Card";
-import { Badge } from "../ui/Badge";
-import { Colors } from "../../constants/theme";
-import type { ClavelResult } from "../../lib/classification";
+import type { ClassificationResult, ASPattern } from "@/lib/classification";
+import { Badge } from "@/components/ui/Badge";
 
 interface PatternCardProps {
-  pattern: string;
-  patternName: string;
-  description: string;
-  confidence: number;
-  discordances: string[];
-  clavelClassification?: ClavelResult;
+  result: ClassificationResult;
 }
 
-const patternColors: Record<string, string> = {
-  "high-gradient": Colors.danger,
-  "classic-lflg": Colors.warning,
-  "paradoxical-lflg": Colors.warning,
-  "normal-flow-lg": Colors.accent,
-  "moderate": Colors.warning,
-  "discordant": Colors.muted,
+const patternColors: Record<
+  ASPattern,
+  { border: string; bg: string; text: string; badgeVariant: "danger" | "warning" | "gold" | "muted" }
+> = {
+  "high-gradient": {
+    border: "border-red-500/40",
+    bg: "bg-red-500/10",
+    text: "text-red-400",
+    badgeVariant: "danger",
+  },
+  "classic-lflg": {
+    border: "border-red-500/40",
+    bg: "bg-red-500/10",
+    text: "text-red-400",
+    badgeVariant: "danger",
+  },
+  "paradoxical-lflg": {
+    border: "border-amber-500/40",
+    bg: "bg-amber-500/10",
+    text: "text-amber-400",
+    badgeVariant: "warning",
+  },
+  "normal-flow-lg": {
+    border: "border-amber-500/40",
+    bg: "bg-amber-500/10",
+    text: "text-amber-400",
+    badgeVariant: "warning",
+  },
+  moderate: {
+    border: "border-gold/40",
+    bg: "bg-gold/10",
+    text: "text-gold",
+    badgeVariant: "gold",
+  },
+  discordant: {
+    border: "border-slate-500/40",
+    bg: "bg-slate-500/10",
+    text: "text-slate-400",
+    badgeVariant: "muted",
+  },
 };
 
-const clavelSeverityColors: Record<string, string> = {
-  severe: Colors.danger,
-  "likely-severe": Colors.warning,
-  indeterminate: Colors.accent,
-  "unlikely-severe": Colors.success,
-};
-
-export function PatternCard({
-  pattern,
-  patternName,
-  description,
-  confidence,
-  discordances,
-  clavelClassification,
-}: PatternCardProps) {
-  const color = patternColors[pattern] ?? Colors.muted;
-  const confidencePct = Math.round(confidence * 100);
+export function PatternCard({ result }: PatternCardProps) {
+  const colors = patternColors[result.pattern];
 
   return (
-    <Card
-      style={{
-        borderLeftWidth: 4,
-        borderLeftColor: color,
-        marginVertical: 8,
-      }}
+    <div
+      className={`rounded-xl border p-4 ${colors.border} ${colors.bg}`}
     >
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: 8,
-        }}
-      >
-        <Text
-          style={{
-            color: color,
-            fontSize: 16,
-            fontWeight: "800",
-            flex: 1,
-          }}
-        >
-          {patternName}
-        </Text>
-        <Badge
-          label={`${confidencePct}%`}
-          color={color}
-          textColor={Colors.white}
-        />
-      </View>
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h3 className={`text-sm font-semibold ${colors.text}`}>
+          {result.patternName}
+        </h3>
+        <Badge variant={colors.badgeVariant}>
+          {Math.round(result.confidence * 100)}%
+        </Badge>
+      </div>
 
-      <Text
-        style={{
-          color: Colors.primary,
-          fontSize: 13,
-          lineHeight: 20,
-          marginBottom: discordances.length > 0 || clavelClassification ? 12 : 0,
-        }}
-      >
-        {description}
-      </Text>
+      <p className="text-xs text-slate-400 leading-relaxed mb-3">
+        {result.description}
+      </p>
 
-      {/* ── Clavel 2015 Classification ──────────────────────────────── */}
-      {clavelClassification && (
-        <View
-          style={{
-            backgroundColor: Colors.accent + "10",
-            borderRadius: 8,
-            padding: 10,
-            borderWidth: 1,
-            borderColor: Colors.accent + "30",
-            marginBottom: discordances.length > 0 ? 12 : 0,
-          }}
-        >
-          <Text
-            style={{
-              color: Colors.accent,
-              fontSize: 12,
-              fontWeight: "700",
-              marginBottom: 6,
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-            }}
-          >
-            Clavel Classification (2015)
-          </Text>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 13,
-              fontWeight: "600",
-              marginBottom: 4,
-            }}
-          >
-            {clavelClassification.label}
-          </Text>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 12,
-              lineHeight: 18,
-              marginBottom: clavelClassification.calciumInterpretation || clavelClassification.dseInterpretation ? 8 : 0,
-            }}
-          >
-            {clavelClassification.nextStep}
-          </Text>
-
-          {/* DSE interpretation */}
-          {clavelClassification.dseInterpretation && (
-            <View
-              style={{
-                backgroundColor: Colors.inputBg,
-                borderRadius: 6,
-                padding: 8,
-                marginBottom: clavelClassification.calciumInterpretation ? 6 : 0,
-              }}
-            >
-              <Text style={{ color: Colors.muted, fontSize: 10, fontWeight: "600", marginBottom: 2 }}>
-                DSE RESULT
-              </Text>
-              <Text style={{ color: Colors.primary, fontSize: 12, lineHeight: 17 }}>
-                {clavelClassification.dseInterpretation}
-              </Text>
-            </View>
-          )}
-
-          {/* CT calcium interpretation */}
-          {clavelClassification.calciumInterpretation && (
-            <View
-              style={{
-                backgroundColor: Colors.inputBg,
-                borderRadius: 6,
-                padding: 8,
-              }}
-            >
-              <Text style={{ color: Colors.muted, fontSize: 10, fontWeight: "600", marginBottom: 2 }}>
-                CT CALCIUM ADJUDICATION
-              </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: clavelSeverityColors[clavelClassification.calciumInterpretation.severity] ?? Colors.muted,
-                  }}
-                />
-                <Text style={{ color: Colors.primary, fontSize: 12, lineHeight: 17, flex: 1 }}>
-                  {clavelClassification.calciumInterpretation.label}
-                </Text>
-              </View>
-              <Text style={{ color: Colors.muted, fontSize: 10, marginTop: 4 }}>
-                {clavelClassification.calciumInterpretation.threshold}
-              </Text>
-            </View>
-          )}
-
-          <Text
-            style={{
-              color: Colors.muted,
-              fontSize: 9,
-              fontStyle: "italic",
-              marginTop: 6,
-            }}
-          >
-            Clavel MA et al. Heart 2015;101:1881-1888 (PMID: 25772832)
-          </Text>
-        </View>
-      )}
-
-      {discordances.length > 0 && (
-        <View
-          style={{
-            backgroundColor: Colors.warning + "10",
-            borderRadius: 8,
-            padding: 10,
-            borderWidth: 1,
-            borderColor: Colors.warning + "25",
-          }}
-        >
-          <Text
-            style={{
-              color: Colors.warning,
-              fontSize: 12,
-              fontWeight: "700",
-              marginBottom: 6,
-            }}
-          >
-            Discordances
-          </Text>
-          {discordances.map((d, i) => (
-            <View
+      {/* Discordance Notes */}
+      {result.discordances.length > 0 && (
+        <div className="space-y-1.5 mb-3">
+          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+            Discordance Notes
+          </span>
+          {result.discordances.map((note, i) => (
+            <div
               key={i}
-              style={{
-                flexDirection: "row",
-                marginBottom: i < discordances.length - 1 ? 4 : 0,
-              }}
+              className="flex items-start gap-2 bg-navy-700/50 rounded-lg px-3 py-2"
             >
-              <Text style={{ color: Colors.warning, fontSize: 12, marginRight: 6 }}>
-                {"\u2022"}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.primary,
-                  fontSize: 12,
-                  lineHeight: 18,
-                  flex: 1,
-                }}
-              >
-                {d}
-              </Text>
-            </View>
+              <span className="text-amber-400 text-xs mt-0.5 flex-shrink-0">
+                &bull;
+              </span>
+              <span className="text-xs text-slate-400 leading-relaxed">
+                {note}
+              </span>
+            </div>
           ))}
-        </View>
+        </div>
       )}
-    </Card>
+
+      {/* Clavel Classification */}
+      {result.clavelClassification && (
+        <div className="border-t border-navy-600/50 pt-3">
+          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+            Clavel Classification
+          </span>
+          <div className="mt-1.5">
+            <p className="text-xs font-medium text-slate-300">
+              {result.clavelClassification.label}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              {result.clavelClassification.nextStep}
+            </p>
+            {result.clavelClassification.calciumInterpretation && (
+              <p className="text-xs text-slate-400 mt-1">
+                <span className="font-medium">CT Calcium: </span>
+                {result.clavelClassification.calciumInterpretation.label}
+              </p>
+            )}
+            {result.clavelClassification.dseInterpretation && (
+              <p className="text-xs text-slate-400 mt-1">
+                <span className="font-medium">DSE: </span>
+                {result.clavelClassification.dseInterpretation}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

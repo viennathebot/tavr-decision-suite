@@ -1,164 +1,129 @@
+"use client";
+
 import { useState } from "react";
-import { View, Text, Pressable } from "react-native";
-import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react-native";
-import { EvidenceBadge } from "./EvidenceBadge";
-import { Colors } from "../../constants/theme";
+import { ChevronDown, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
+import type { Publication } from "@/data/publications";
 
 interface PaperCardProps {
-  title: string;
-  authors: string;
-  journal: string;
-  year: number;
-  pmid?: string;
-  keyFindings: string[];
-  clinicalTakeaway: string;
-  tags: string[];
-  evidenceLevel: "A" | "B" | "C";
-  sampleSize?: number;
+  publication: Publication;
 }
 
-export function PaperCard({
-  title,
-  authors,
-  journal,
-  year,
-  pmid,
-  keyFindings,
-  clinicalTakeaway,
-  tags,
-  evidenceLevel,
-  sampleSize,
-}: PaperCardProps) {
+const levelVariant: Record<string, "success" | "warning" | "muted"> = {
+  A: "success",
+  B: "warning",
+  C: "muted",
+};
+
+const levelLabel: Record<string, string> = {
+  A: "Level A",
+  B: "Level B",
+  C: "Level C",
+};
+
+export function PaperCard({ publication }: PaperCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const p = publication;
+
+  const truncatedAuthors =
+    p.authors.length > 80 ? p.authors.slice(0, 80) + "..." : p.authors;
 
   return (
-    <Pressable
-      onPress={() => setExpanded(!expanded)}
-      style={{
-        backgroundColor: Colors.card,
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 8,
-        borderWidth: 1,
-        borderColor: Colors.cardBorder,
-      }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
-        {expanded ? (
-          <ChevronDown size={16} color={Colors.accent} style={{ marginTop: 2 }} />
-        ) : (
-          <ChevronRight size={16} color={Colors.muted} style={{ marginTop: 2 }} />
-        )}
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 13,
-              fontWeight: "600",
-              lineHeight: 18,
-            }}
-          >
-            {title}
-          </Text>
-          <Text
-            style={{ color: Colors.muted, fontSize: 11, marginTop: 3 }}
-            numberOfLines={1}
-          >
-            {authors}
-          </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginTop: 4,
-              gap: 8,
-            }}
-          >
-            <Text style={{ color: Colors.muted, fontSize: 11, fontStyle: "italic" }}>
-              {journal} {year}
-            </Text>
-            {sampleSize && (
-              <Text style={{ color: Colors.accent, fontSize: 10, fontWeight: "600" }}>
-                n={sampleSize.toLocaleString()}
-              </Text>
-            )}
-          </View>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
-            <EvidenceBadge level={evidenceLevel} />
-          </View>
-        </View>
-      </View>
+    <div className="border border-navy-600 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-start gap-3 px-4 py-3 bg-navy-800 hover:bg-navy-700 transition-colors text-left"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-2">
+            <h3 className="text-sm font-semibold text-slate-200 leading-snug flex-1">
+              {p.title}
+            </h3>
+            <Badge variant={levelVariant[p.evidenceLevel] ?? "muted"}>
+              {levelLabel[p.evidenceLevel]}
+            </Badge>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">{truncatedAuthors}</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">
+            {p.journal} ({p.year})
+          </p>
+        </div>
+        <ChevronDown
+          size={16}
+          className={`text-slate-400 transition-transform mt-1 shrink-0 ${
+            expanded ? "rotate-180" : ""
+          }`}
+        />
+      </button>
 
       {expanded && (
-        <View style={{ marginTop: 12, paddingLeft: 24 }}>
-          <Text
-            style={{
-              color: Colors.success,
-              fontSize: 12,
-              fontWeight: "600",
-              marginBottom: 6,
-            }}
-          >
-            Clinical Takeaway
-          </Text>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 12,
-              lineHeight: 18,
-              marginBottom: 10,
-            }}
-          >
-            {clinicalTakeaway}
-          </Text>
+        <div className="px-4 py-4 bg-navy-800/50 border-t border-navy-600 space-y-3">
+          {/* Key Findings */}
+          <div>
+            <h4 className="text-xs font-semibold text-slate-300 mb-1.5">
+              Key Findings
+            </h4>
+            <ul className="space-y-1">
+              {p.keyFindings.map((finding, i) => (
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-xs text-slate-400"
+                >
+                  <span className="text-gold mt-0.5 shrink-0">-</span>
+                  <span>{finding}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          <Text
-            style={{
-              color: Colors.accent,
-              fontSize: 12,
-              fontWeight: "600",
-              marginBottom: 4,
-            }}
-          >
-            Key Findings
-          </Text>
-          {keyFindings.map((f, i) => (
-            <View key={i} style={{ flexDirection: "row", marginBottom: 3 }}>
-              <Text style={{ color: Colors.muted, fontSize: 11, marginRight: 6 }}>
-                {"\u2022"}
-              </Text>
-              <Text style={{ color: Colors.primary, fontSize: 11, flex: 1, lineHeight: 16 }}>
-                {f}
-              </Text>
-            </View>
-          ))}
+          {/* Clinical Takeaway */}
+          <div className="px-3 py-2 bg-gold/5 border border-gold/20 rounded-lg">
+            <h4 className="text-[10px] font-semibold text-gold mb-0.5">
+              Clinical Takeaway
+            </h4>
+            <p className="text-xs text-slate-300">{p.clinicalTakeaway}</p>
+          </div>
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
-            {tags.map((tag) => (
-              <View
-                key={tag}
-                style={{
-                  backgroundColor: Colors.inputBg,
-                  borderRadius: 4,
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
-                }}
+          {/* Metadata row */}
+          <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500">
+            {p.sampleSize && (
+              <span>
+                <span className="text-slate-400 font-medium">N = </span>
+                {p.sampleSize.toLocaleString()}
+              </span>
+            )}
+            {p.pmid && (
+              <a
+                href={`https://pubmed.ncbi.nlm.nih.gov/${p.pmid}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 text-gold hover:text-gold-dark transition-colors"
               >
-                <Text style={{ color: Colors.muted, fontSize: 9 }}>{tag}</Text>
-              </View>
-            ))}
-          </View>
+                PMID: {p.pmid}
+                <ExternalLink size={10} />
+              </a>
+            )}
+            {p.primaryOutcome && (
+              <span>
+                <span className="text-slate-400 font-medium">Outcome: </span>
+                {p.primaryOutcome}
+              </span>
+            )}
+          </div>
 
-          {pmid && (
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, gap: 4 }}>
-              <ExternalLink size={12} color={Colors.muted} />
-              <Text style={{ color: Colors.muted, fontSize: 10 }}>
-                PMID: {pmid}
-              </Text>
-            </View>
-          )}
-        </View>
+          {/* Tags */}
+          <div className="flex flex-wrap gap-1">
+            {p.tags.map((tag) => (
+              <span
+                key={tag}
+                className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-navy-700 text-slate-500 border border-navy-500"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
       )}
-    </Pressable>
+    </div>
   );
 }

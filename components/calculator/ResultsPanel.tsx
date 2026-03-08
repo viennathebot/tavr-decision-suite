@@ -1,155 +1,118 @@
-import { useMemo, useState, useEffect } from "react";
-import { View, Text, ScrollView } from "react-native";
-import { useCalculatorStore } from "../../store/calculatorStore";
-import * as calc from "../../lib/calculations";
-import { classifyAS } from "../../lib/classification";
-import { generateRecommendations } from "../../lib/recommendations";
-import { calculateSTSPROM, type STSResult } from "../../lib/sts-prom";
-import { Card } from "../ui/Card";
-import { ResultRow } from "../ui/ResultRow";
-import { SeverityBar } from "../ui/SeverityBar";
+"use client";
+
+import { useMemo } from "react";
+import { useCalculatorStore } from "@/store/calculatorStore";
+import {
+  bsa as calcBSA,
+  ava as calcAVA,
+  indexedAVA,
+  strokeVolumeIndex,
+  dvi as calcDVI,
+  flowRate as calcFlowRate,
+  arterialCompliance,
+} from "@/lib/calculations";
+import { classifyAS } from "@/lib/classification";
+import { generateRecommendations } from "@/lib/recommendations";
+import { checkMeasurementErrors } from "@/lib/validation";
+import { calculateSTSPROM } from "@/lib/sts-prom";
+import { ResultRow } from "@/components/ui/ResultRow";
+import { SeverityBar } from "@/components/ui/SeverityBar";
+import { MeasurementErrorChecklist } from "./MeasurementErrorChecklist";
+import { CalciumInterpretation } from "./CalciumInterpretation";
 import { PatternCard } from "./PatternCard";
 import { RecommendationCard } from "./RecommendationCard";
-import { CalciumInterpretation } from "./CalciumInterpretation";
-import { MeasurementErrorChecklist } from "./MeasurementErrorChecklist";
-import { Disclaimer } from "../ui/Disclaimer";
-import { Colors } from "../../constants/theme";
+import { Badge } from "@/components/ui/Badge";
+import type { STSRiskCategory } from "@/lib/sts-prom";
 
-// ─── Severity helpers ──────────────────────────────────────────────────────
-
-function avaSeverity(v: number): "normal" | "warning" | "danger" {
-  if (v < 1.0) return "danger";
-  if (v <= 1.5) return "warning";
-  return "normal";
-}
-
-function sviSeverity(v: number): "normal" | "danger" {
-  return v < 35 ? "danger" : "normal";
-}
-
-function dviSeverity(v: number): "normal" | "danger" {
-  return v < 0.25 ? "danger" : "normal";
-}
-
-function lvefSeverity(v: number): "normal" | "warning" | "danger" {
-  if (v < 50) return "danger";
-  if (v < 55) return "warning";
-  return "normal";
-}
-
-// ─── Debounced results hook ────────────────────────────────────────────────
-
-interface ComputedResults {
-  bsa?: number;
-  ava?: number;
-  indexedAVA?: number;
-  svi?: number;
-  flowRate?: number;
-  dvi?: number;
-  arterialCompliance?: number;
-}
-
-function useComputedResults() {
-  const demographics = useCalculatorStore((s) => s.demographics);
-  const echo = useCalculatorStore((s) => s.echo);
-
-  const rawResults = useMemo(() => {
-    const results: ComputedResults = {};
-
-    // BSA
-    if (demographics.heightCm !== undefined && demographics.weightKg !== undefined) {
-      results.bsa = calc.bsa(demographics.heightCm, demographics.weightKg);
-    }
-
-    // AVA via continuity equation
-    if (
-      echo.lvotDiameter !== undefined &&
-      echo.lvotTVI !== undefined &&
-      echo.aovTVI !== undefined
-    ) {
-      results.ava = calc.ava(echo.lvotDiameter, echo.lvotTVI, echo.aovTVI);
-    }
-
-    // Indexed AVA
-    if (results.ava !== undefined && results.bsa !== undefined) {
-      results.indexedAVA = calc.indexedAVA(results.ava, results.bsa);
-    }
-
-    // SVI
-    if (echo.strokeVolume !== undefined && results.bsa !== undefined) {
-      results.svi = calc.strokeVolumeIndex(echo.strokeVolume, results.bsa);
-    }
-
-    // Flow rate
-    if (echo.strokeVolume !== undefined && echo.lvEjectionTime !== undefined) {
-      results.flowRate = calc.flowRate(echo.strokeVolume, echo.lvEjectionTime);
-    }
-
-    // DVI
-    if (echo.lvotTVI !== undefined && echo.aovTVI !== undefined) {
-      results.dvi = calc.dvi(echo.lvotTVI, echo.aovTVI);
-    }
-
-    // Arterial compliance
-    if (
-      results.svi !== undefined &&
-      echo.systolicBP !== undefined &&
-      echo.diastolicBP !== undefined &&
-      echo.systolicBP > echo.diastolicBP
-    ) {
-      results.arterialCompliance = calc.arterialCompliance(
-        results.svi,
-        echo.systolicBP,
-        echo.diastolicBP
-      );
-    }
-
-    return results;
-  }, [demographics, echo]);
-
-  // Debounce: delay propagation by 150ms
-  const [debouncedResults, setDebouncedResults] = useState(rawResults);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setDebouncedResults(rawResults);
-    }, 150);
-    return () => clearTimeout(timeout);
-  }, [rawResults]);
-
-  return debouncedResults;
-}
-
-// ─── Component ──────────────────────────────────────────────────────────────
-
-const stsRiskColors: Record<string, string> = {
-  low: Colors.success,
-  intermediate: Colors.warning,
-  high: Colors.danger,
-  extreme: Colors.danger,
+const stsRiskBadgeVariant: Record<STSRiskCategory, "success" | "warning" | "danger"> = {
+  low: "success",
+  intermediate: "warning",
+  high: "danger",
+  extreme: "danger",
 };
 
 export function ResultsPanel() {
-  const echo = useCalculatorStore((s) => s.echo);
   const demographics = useCalculatorStore((s) => s.demographics);
+  const echo = useCalculatorStore((s) => s.echo);
   const ct = useCalculatorStore((s) => s.ct);
-  const sts = useCalculatorStore((s) => s.sts);
-  const results = useComputedResults();
-
   const dobutamine = useCalculatorStore((s) => s.dobutamine);
+  const sts = useCalculatorStore((s) => s.sts);
+
+  // Derived calculations
+  const calcs = useMemo(() => {
+    const bsaVal =
+      demographics.heightCm && demographics.weightKg
+        ? calcBSA(demographics.heightCm, demographics.weightKg)
+        : undefined;
+
+    const avaVal =
+      echo.lvotDiameter && echo.lvotTVI && echo.aovTVI
+        ? calcAVA(echo.lvotDiameter, echo.lvotTVI, echo.aovTVI)
+        : undefined;
+
+    const iAVA =
+      avaVal !== undefined && bsaVal !== undefined
+        ? indexedAVA(avaVal, bsaVal)
+        : undefined;
+
+    const sviVal =
+      echo.strokeVolume !== undefined && bsaVal !== undefined
+        ? strokeVolumeIndex(echo.strokeVolume, bsaVal)
+        : undefined;
+
+    const dviVal =
+      echo.lvotTVI !== undefined && echo.aovTVI !== undefined
+        ? calcDVI(echo.lvotTVI, echo.aovTVI)
+        : undefined;
+
+    const flowRateVal =
+      echo.strokeVolume !== undefined && echo.lvEjectionTime !== undefined
+        ? calcFlowRate(echo.strokeVolume, echo.lvEjectionTime)
+        : undefined;
+
+    const sacVal =
+      sviVal !== undefined &&
+      echo.systolicBP !== undefined &&
+      echo.diastolicBP !== undefined &&
+      echo.systolicBP > echo.diastolicBP
+        ? arterialCompliance(sviVal, echo.systolicBP, echo.diastolicBP)
+        : undefined;
+
+    return { bsaVal, avaVal, iAVA, sviVal, dviVal, flowRateVal, sacVal };
+  }, [demographics, echo]);
+
+  // Classification
+  const classification = useMemo(() => {
+    return classifyAS(
+      {
+        ava: calcs.avaVal,
+        meanGradient: echo.meanGradient,
+        vmax: echo.vmax,
+        lvef: echo.lvef,
+        svi: calcs.sviVal,
+        dvi: calcs.dviVal,
+      },
+      {
+        sex: demographics.sex,
+        calciumScore: ct.calciumScore,
+        stressAVA: dobutamine.stressAVA,
+        stressMeanGradient: dobutamine.stressMeanGradient,
+      },
+    );
+  }, [calcs, echo, demographics.sex, ct.calciumScore, dobutamine]);
 
   // STS-PROM
-  const stsResult = useMemo<STSResult>(() => {
+  const stsResult = useMemo(() => {
     return calculateSTSPROM({
       age: demographics.age,
       sex: demographics.sex,
       heightCm: demographics.heightCm,
       weightKg: demographics.weightKg,
+      nyhaClass: demographics.nyhaClass,
+      lvef: echo.lvef,
       creatinine: sts.creatinine,
       diabetes: sts.diabetes,
-      nyhaClass: demographics.nyhaClass,
       priorCardiacSurgery: sts.priorCardiacSurgery,
-      lvef: echo.lvef,
       urgency: sts.urgency,
       endocarditis: sts.endocarditis,
       chronicLungDisease: sts.chronicLungDisease,
@@ -159,408 +122,223 @@ export function ResultsPanel() {
     });
   }, [demographics, echo.lvef, sts]);
 
-  // Classification (with Clavel 2015 inputs)
-  const classification = useMemo(() => {
-    return classifyAS(
-      {
-        ava: results.ava,
-        meanGradient: echo.meanGradient,
-        vmax: echo.vmax,
-        lvef: echo.lvef,
-        svi: results.svi,
-        dvi: results.dvi,
-      },
-      {
-        sex: demographics.sex as 'male' | 'female' | undefined,
-        calciumScore: ct.calciumScore,
-        stressAVA: dobutamine.stressAVA,
-        stressMeanGradient: dobutamine.stressMeanGradient,
-      },
-    );
-  }, [results.ava, results.svi, results.dvi, echo.meanGradient, echo.vmax, echo.lvef, demographics.sex, ct.calciumScore, dobutamine.stressAVA, dobutamine.stressMeanGradient]);
+  // Measurement errors
+  const measurementErrors = useMemo(() => {
+    return checkMeasurementErrors({
+      lvotDiameter: echo.lvotDiameter,
+      lvotTVI: echo.lvotTVI,
+      bsa: calcs.bsaVal,
+      ava: calcs.avaVal,
+      dvi: calcs.dviVal,
+      sbp: echo.systolicBP,
+    });
+  }, [echo, calcs]);
 
   // Recommendations
   const recommendations = useMemo(() => {
     if (!classification) return [];
-    try {
-      const hasDobutamineData =
+    return generateRecommendations({
+      pattern: classification.pattern,
+      symptomatic: demographics.symptomatic ?? false,
+      lvef: echo.lvef,
+      calciumScore: ct.calciumScore,
+      sex: demographics.sex,
+      nyhaClass: demographics.nyhaClass,
+      hasDobutamineData:
         dobutamine.stressAVA !== undefined ||
-        dobutamine.stressMeanGradient !== undefined;
-      return generateRecommendations({
-        pattern: classification.pattern,
-        symptomatic: demographics.symptomatic ?? false,
-        lvef: echo.lvef,
-        calciumScore: ct.calciumScore,
-        sex: demographics.sex,
-        nyhaClass: demographics.nyhaClass,
-        hasDobutamineData,
-        stressAVA: dobutamine.stressAVA,
-        stressMeanGradient: dobutamine.stressMeanGradient,
-        stsMortality: stsResult.sufficient ? stsResult.mortality : undefined,
-        stsRiskCategory: stsResult.sufficient ? stsResult.category : undefined,
-      });
-    } catch {
-      return [];
-    }
-  }, [classification, results, echo, ct, demographics, dobutamine, stsResult]);
+        dobutamine.stressMeanGradient !== undefined,
+      stressAVA: dobutamine.stressAVA,
+      stressMeanGradient: dobutamine.stressMeanGradient,
+      stsMortality: stsResult.sufficient ? stsResult.mortality : undefined,
+      stsRiskCategory: stsResult.sufficient ? stsResult.category : undefined,
+    });
+  }, [classification, demographics, echo.lvef, ct, dobutamine, stsResult]);
 
-  const hasAnyResult =
-    results.bsa !== undefined ||
-    results.ava !== undefined ||
-    results.dvi !== undefined;
+  // Helper for AVA severity
+  const avaSeverity = (v: number): "normal" | "moderate" | "severe" => {
+    if (v < 1.0) return "severe";
+    if (v <= 1.5) return "moderate";
+    return "normal";
+  };
 
-  if (!hasAnyResult) {
+  // Helper for SVI severity
+  const sviSeverity = (v: number): "normal" | "severe" => {
+    return v < 35 ? "severe" : "normal";
+  };
+
+  // Helper for DVI severity
+  const dviSeverity = (v: number): "normal" | "severe" => {
+    return v < 0.25 ? "severe" : "normal";
+  };
+
+  const hasAnyData =
+    calcs.bsaVal !== undefined ||
+    calcs.avaVal !== undefined ||
+    calcs.sviVal !== undefined ||
+    calcs.dviVal !== undefined ||
+    echo.vmax !== undefined;
+
+  if (!hasAnyData) {
     return (
-      <Card style={{ marginVertical: 8 }}>
-        <Text
-          style={{
-            color: Colors.muted,
-            fontSize: 14,
-            textAlign: "center",
-            paddingVertical: 24,
-            lineHeight: 22,
-          }}
-        >
-          Enter echocardiographic and demographic data above to see calculated
-          results and AS classification.
-        </Text>
-      </Card>
+      <div className="rounded-xl border border-navy-600 bg-navy-800 p-8 text-center">
+        <p className="text-sm text-slate-500">
+          Enter echocardiographic measurements to see calculated results.
+        </p>
+      </div>
     );
   }
 
   return (
-    <View style={{ gap: 8 }}>
-      {/* ── Calculated Values ────────────────────────────────────────── */}
-      <Card>
-        <Text
-          style={{
-            color: Colors.primary,
-            fontSize: 16,
-            fontWeight: "700",
-            marginBottom: 8,
-          }}
-        >
-          Calculated Results
-        </Text>
+    <div className="space-y-4">
+      {/* Calculated Values */}
+      <div className="rounded-xl border border-navy-600 bg-navy-800 p-4">
+        <h3 className="text-sm font-semibold text-slate-200 mb-3">
+          Calculated Values
+        </h3>
+        <div className="space-y-0">
+          {calcs.bsaVal !== undefined && (
+            <ResultRow
+              label="BSA"
+              value={calcs.bsaVal.toFixed(2)}
+              unit="m\u00B2"
+              subtext="Mosteller formula"
+            />
+          )}
 
-        <ResultRow
-          label="BSA"
-          value={results.bsa}
-          unit="m\u00B2"
-          severity="info"
-          hint="Mosteller formula"
-        />
-
-        <ResultRow
-          label="AVA"
-          value={results.ava}
-          unit="cm\u00B2"
-          severity={results.ava !== undefined ? avaSeverity(results.ava) : undefined}
-          hint="Continuity equation"
-        />
-
-        <ResultRow
-          label="Indexed AVA"
-          value={results.indexedAVA}
-          unit="cm\u00B2/m\u00B2"
-          severity={
-            results.indexedAVA !== undefined
-              ? results.indexedAVA < 0.6
-                ? "danger"
-                : "normal"
-              : undefined
-          }
-          hint="Severe: <0.6"
-        />
-
-        <ResultRow
-          label="SVI"
-          value={results.svi}
-          unit="mL/m\u00B2"
-          severity={results.svi !== undefined ? sviSeverity(results.svi) : undefined}
-          hint="Low-flow: <35"
-        />
-
-        <ResultRow
-          label="Flow Rate"
-          value={results.flowRate}
-          unit="mL/s"
-          severity={
-            results.flowRate !== undefined
-              ? results.flowRate < 200
-                ? "danger"
-                : "normal"
-              : undefined
-          }
-          hint="Low-flow: <200"
-        />
-
-        <ResultRow
-          label="DVI"
-          value={results.dvi}
-          unit=""
-          severity={results.dvi !== undefined ? dviSeverity(results.dvi) : undefined}
-          hint="Severe: <0.25"
-        />
-
-        {echo.lvef !== undefined && (
-          <ResultRow
-            label="LVEF"
-            value={echo.lvef}
-            unit="%"
-            severity={lvefSeverity(echo.lvef)}
-          />
-        )}
-
-        <ResultRow
-          label="Arterial Compliance"
-          value={results.arterialCompliance}
-          unit="mL/m\u00B2/mmHg"
-          severity={
-            results.arterialCompliance !== undefined
-              ? results.arterialCompliance < 0.6
-                ? "danger"
-                : "normal"
-              : undefined
-          }
-          hint="Low: <0.6"
-        />
-      </Card>
-
-      {/* ── Severity Bars ────────────────────────────────────────────── */}
-      {(results.ava !== undefined || echo.meanGradient !== undefined) && (
-        <Card>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 14,
-              fontWeight: "700",
-              marginBottom: 8,
-            }}
-          >
-            Severity Grading
-          </Text>
-
-          {results.ava !== undefined && (
-            <SeverityBar
+          {calcs.avaVal !== undefined && (
+            <ResultRow
               label="AVA"
-              value={results.ava}
-              max={3.0}
+              value={calcs.avaVal.toFixed(2)}
               unit="cm\u00B2"
-              thresholds={[
-                { value: 0, color: Colors.danger, label: "Severe" },
-                { value: 1.0, color: Colors.warning, label: "Moderate" },
-                { value: 1.5, color: Colors.success, label: "Mild" },
-              ]}
+              severity={avaSeverity(calcs.avaVal)}
+              subtext="Continuity equation"
             />
           )}
 
-          {echo.meanGradient !== undefined && (
-            <SeverityBar
-              label="Mean Gradient"
-              value={echo.meanGradient}
-              max={80}
-              unit="mmHg"
-              thresholds={[
-                { value: 0, color: Colors.success, label: "Mild" },
-                { value: 20, color: Colors.warning, label: "Moderate" },
-                { value: 40, color: Colors.danger, label: "Severe" },
-              ]}
+          {calcs.iAVA !== undefined && (
+            <ResultRow
+              label="iAVA"
+              value={calcs.iAVA.toFixed(2)}
+              unit="cm\u00B2/m\u00B2"
+              severity={calcs.iAVA < 0.6 ? "severe" : calcs.iAVA <= 0.85 ? "moderate" : "normal"}
+              subtext="Indexed AVA (severe <0.6)"
             />
           )}
 
-          {echo.vmax !== undefined && (
-            <SeverityBar
-              label="Vmax"
-              value={echo.vmax}
-              max={6.0}
-              unit="m/s"
-              thresholds={[
-                { value: 0, color: Colors.success, label: "Mild" },
-                { value: 3.0, color: Colors.warning, label: "Moderate" },
-                { value: 4.0, color: Colors.danger, label: "Severe" },
-              ]}
-            />
-          )}
-
-          {results.svi !== undefined && (
-            <SeverityBar
+          {calcs.sviVal !== undefined && (
+            <ResultRow
               label="SVI"
-              value={results.svi}
-              max={60}
-              unit="mL/m²"
-              thresholds={[
-                { value: 0, color: Colors.danger, label: "Low-Flow" },
-                { value: 35, color: Colors.success, label: "Normal" },
-              ]}
+              value={calcs.sviVal.toFixed(1)}
+              unit="mL/m\u00B2"
+              severity={sviSeverity(calcs.sviVal)}
+              subtext="Low-flow <35"
             />
           )}
-        </Card>
+
+          {calcs.dviVal !== undefined && (
+            <ResultRow
+              label="DVI"
+              value={calcs.dviVal.toFixed(2)}
+              severity={dviSeverity(calcs.dviVal)}
+              subtext="Severe <0.25"
+            />
+          )}
+
+          {calcs.flowRateVal !== undefined && (
+            <ResultRow
+              label="Flow Rate"
+              value={calcs.flowRateVal.toFixed(0)}
+              unit="mL/s"
+              severity={calcs.flowRateVal < 200 ? "severe" : "normal"}
+              subtext="Low-flow <200 mL/s"
+            />
+          )}
+
+          {calcs.sacVal !== undefined && (
+            <ResultRow
+              label="SAC"
+              value={calcs.sacVal.toFixed(2)}
+              unit="mL/m\u00B2/mmHg"
+              severity={calcs.sacVal < 0.6 ? "severe" : "normal"}
+              subtext="Low compliance <0.6"
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Severity Bars */}
+      {echo.vmax !== undefined && (
+        <div className="rounded-xl border border-navy-600 bg-navy-800 p-4">
+          <SeverityBar
+            label="Peak Aortic Velocity (Vmax)"
+            value={echo.vmax}
+            unit="m/s"
+            thresholds={[
+              { label: "Normal", min: 0, max: 3, color: "#10b981" },
+              { label: "Moderate", min: 3, max: 4, color: "#f59e0b" },
+              { label: "Severe", min: 4, max: 7, color: "#ef4444" },
+            ]}
+          />
+        </div>
       )}
 
-      {/* ── STS-PROM Risk Summary ─────────────────────────────────────── */}
-      {stsResult.sufficient && (
-        <Card
-          style={{
-            borderLeftWidth: 4,
-            borderLeftColor: stsRiskColors[stsResult.category] ?? Colors.muted,
-          }}
-        >
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 14,
-              fontWeight: "700",
-              marginBottom: 8,
-            }}
-          >
-            STS-PROM Risk Summary
-          </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "baseline",
-              marginBottom: 6,
-            }}
-          >
-            <Text
-              style={{
-                color: stsRiskColors[stsResult.category],
-                fontSize: 28,
-                fontWeight: "800",
-                fontFamily: "DMMono_500Medium",
-              }}
-            >
-              {stsResult.mortality.toFixed(1)}
-            </Text>
-            <Text
-              style={{
-                color: stsRiskColors[stsResult.category],
-                fontSize: 14,
-                fontWeight: "600",
-                marginLeft: 2,
-              }}
-            >
-              %
-            </Text>
-            <Text
-              style={{
-                color: stsRiskColors[stsResult.category],
-                fontSize: 13,
-                fontWeight: "700",
-                marginLeft: 12,
-              }}
-            >
-              {stsResult.categoryLabel}
-            </Text>
-          </View>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 12,
-              lineHeight: 18,
-              marginBottom: 6,
-            }}
-          >
-            {stsResult.interpretation}
-          </Text>
-          {demographics.heightCm !== undefined &&
-            demographics.weightKg !== undefined && (
-              <Text style={{ color: Colors.muted, fontSize: 11 }}>
-                BMI:{" "}
-                {(
-                  demographics.weightKg /
-                  Math.pow(demographics.heightCm / 100, 2)
-                ).toFixed(1)}{" "}
-                kg/m{"\u00B2"}
-              </Text>
-            )}
-          <Text
-            style={{
-              color: Colors.muted,
-              fontSize: 9,
-              fontStyle: "italic",
-              marginTop: 6,
-            }}
-          >
-            Simplified estimate. Use sts.org for official STS-PROM.
-          </Text>
-        </Card>
+      {calcs.sviVal !== undefined && (
+        <div className="rounded-xl border border-navy-600 bg-navy-800 p-4">
+          <SeverityBar
+            label="Stroke Volume Index (SVI)"
+            value={calcs.sviVal}
+            unit="mL/m\u00B2"
+            thresholds={[
+              { label: "Low-Flow", min: 0, max: 35, color: "#ef4444" },
+              { label: "Normal Flow", min: 35, max: 70, color: "#10b981" },
+            ]}
+          />
+        </div>
       )}
 
-      {/* ── Measurement Error Checklist ──────────────────────────────── */}
-      <MeasurementErrorChecklist
-        lvotDiameter={echo.lvotDiameter}
-        systolicBP={echo.systolicBP}
-        bsa={results.bsa}
-        ava={results.ava}
-        dvi={results.dvi}
-        lvotTVI={echo.lvotTVI}
-        indexedAVA={results.indexedAVA}
-      />
+      {/* Measurement Error Checklist */}
+      <MeasurementErrorChecklist errors={measurementErrors} />
 
-      {/* ── Calcium Interpretation ───────────────────────────────────── */}
-      {(ct.calciumScore !== undefined || demographics.sex !== undefined) && (
+      {/* Calcium Interpretation */}
+      {ct.calciumScore !== undefined && (
         <CalciumInterpretation
           calciumScore={ct.calciumScore}
           sex={demographics.sex}
         />
       )}
 
-      {/* ── Classification ───────────────────────────────────────────── */}
-      {classification && (
-        <>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 16,
-              fontWeight: "700",
-              marginTop: 8,
-            }}
-          >
-            AS Classification
-          </Text>
-          <PatternCard
-            pattern={classification.pattern}
-            patternName={classification.patternName}
-            description={classification.description}
-            confidence={classification.confidence}
-            discordances={classification.discordances}
-            clavelClassification={classification.clavelClassification}
-          />
-        </>
+      {/* Pattern Classification */}
+      {classification && <PatternCard result={classification} />}
+
+      {/* STS-PROM Summary */}
+      {stsResult.sufficient && (
+        <div className="rounded-xl border border-navy-600 bg-navy-800 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-slate-200">
+              STS-PROM Estimate
+            </h3>
+            <Badge variant={stsRiskBadgeVariant[stsResult.category]}>
+              {stsResult.mortality.toFixed(2)}% &mdash;{" "}
+              {stsResult.categoryLabel}
+            </Badge>
+          </div>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            {stsResult.interpretation}
+          </p>
+        </div>
       )}
 
-      {/* ── Recommendations ──────────────────────────────────────────── */}
+      {/* Recommendations */}
       {recommendations.length > 0 && (
-        <>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 16,
-              fontWeight: "700",
-              marginTop: 8,
-            }}
-          >
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-slate-200">
             Recommendations
-          </Text>
+          </h3>
           {recommendations.map((rec, i) => (
-            <RecommendationCard
-              key={i}
-              title={rec.title}
-              description={rec.description}
-              urgency={rec.urgency}
-              actions={rec.actions}
-              guideline={rec.guideline}
-              guidelineClass={rec.guidelineClass}
-              citation={rec.citation}
-            />
+            <RecommendationCard key={i} recommendation={rec} />
           ))}
-        </>
+        </div>
       )}
-
-      {/* ── Disclaimer ───────────────────────────────────────────────── */}
-      <Disclaimer />
-    </View>
+    </div>
   );
 }

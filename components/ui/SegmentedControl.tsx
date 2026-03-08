@@ -1,66 +1,36 @@
-import { View, Text, Pressable } from "react-native";
-import { Colors } from "../../constants/theme";
+"use client";
 
 interface SegmentedControlProps<T extends string> {
-  label: string;
-  options: { value: T; label: string }[];
-  selected: T | undefined;
-  onSelect: (value: T) => void;
+  options: { label: string; value: T }[];
+  value?: T;
+  onChange: (value: T) => void;
+  label?: string;
 }
 
 export function SegmentedControl<T extends string>({
-  label,
   options,
-  selected,
-  onSelect,
+  value,
+  onChange,
+  label,
 }: SegmentedControlProps<T>) {
   return (
-    <View style={{ marginVertical: 6 }}>
-      <Text
-        style={{
-          color: Colors.primary,
-          fontSize: 13,
-          fontWeight: "600",
-          marginBottom: 6,
-        }}
-      >
-        {label}
-      </Text>
-      <View
-        style={{
-          flexDirection: "row",
-          backgroundColor: Colors.inputBg,
-          borderRadius: 8,
-          padding: 2,
-        }}
-      >
-        {options.map((opt) => {
-          const isActive = selected === opt.value;
-          return (
-            <Pressable
-              key={opt.value}
-              onPress={() => onSelect(opt.value)}
-              style={{
-                flex: 1,
-                paddingVertical: 8,
-                borderRadius: 6,
-                backgroundColor: isActive ? Colors.accent : "transparent",
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{
-                  color: isActive ? Colors.white : Colors.muted,
-                  fontSize: 13,
-                  fontWeight: isActive ? "600" : "400",
-                }}
-              >
-                {opt.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
+    <div className="flex flex-col gap-1">
+      {label && <label className="text-xs font-medium text-slate-400">{label}</label>}
+      <div className="flex bg-navy-700 rounded-lg p-0.5 border border-navy-500">
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              value === opt.value
+                ? "bg-gold text-navy-900 shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface Demographics {
   age?: number;
@@ -170,7 +169,7 @@ export const useCalculatorStore = create<CalculatorState>()(
     }),
     {
       name: "tavr-calculator-store",
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ savedCases: state.savedCases }),
     }
   )

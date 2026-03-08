@@ -1,188 +1,94 @@
-import { View, Text } from "react-native";
-import { Card } from "../ui/Card";
-import { Badge } from "../ui/Badge";
-import { Colors } from "../../constants/theme";
+import type { Recommendation, Urgency, GuidelineClass } from "@/lib/recommendations";
+import { Badge } from "@/components/ui/Badge";
+import { CheckCircle2, BookOpen } from "lucide-react";
 
 interface RecommendationCardProps {
-  title: string;
-  description: string;
-  urgency: string;
-  actions: string[];
-  guideline: string;
-  guidelineClass: string;
-  citation: string;
+  recommendation: Recommendation;
 }
 
-const urgencyColors: Record<string, string> = {
-  high: Colors.danger,
-  moderate: Colors.warning,
-  watch: Colors.accent,
+const urgencyStyles: Record<
+  Urgency,
+  { border: string; badge: "danger" | "warning" | "success" }
+> = {
+  high: { border: "border-l-red-500", badge: "danger" },
+  moderate: { border: "border-l-amber-500", badge: "warning" },
+  watch: { border: "border-l-emerald-500", badge: "success" },
 };
 
-const urgencyLabels: Record<string, string> = {
-  high: "HIGH PRIORITY",
-  moderate: "MODERATE",
-  watch: "SURVEILLANCE",
+const urgencyLabels: Record<Urgency, string> = {
+  high: "High Priority",
+  moderate: "Moderate",
+  watch: "Watch",
 };
 
-const urgencyVariant: Record<string, "danger" | "warning" | "outlined" | "default"> = {
-  high: "danger",
-  moderate: "warning",
-  watch: "outlined",
+const classColors: Record<GuidelineClass, string> = {
+  I: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  IIa: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  IIb: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  III: "bg-red-500/15 text-red-400 border-red-500/30",
 };
 
 export function RecommendationCard({
-  title,
-  description,
-  urgency,
-  actions,
-  guideline,
-  guidelineClass,
-  citation,
+  recommendation,
 }: RecommendationCardProps) {
-  const color = urgencyColors[urgency] ?? Colors.muted;
-  const variant = urgencyVariant[urgency] ?? "default";
+  const { title, description, urgency, actions, guideline, guidelineClass, citation } =
+    recommendation;
+  const styles = urgencyStyles[urgency];
 
   return (
-    <Card variant={variant} style={{ marginVertical: 6 }}>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: 8,
-        }}
-      >
-        <Text
-          style={{
-            color: color,
-            fontSize: 15,
-            fontWeight: "700",
-            flex: 1,
-            marginRight: 8,
-          }}
-        >
+    <div
+      className={`rounded-xl border border-navy-600 bg-navy-800 border-l-4 ${styles.border} p-4`}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h3 className="text-sm font-semibold text-slate-200 flex-1">
           {title}
-        </Text>
-        <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-          <Text
-            style={{
-              color: color,
-              fontSize: 9,
-              fontWeight: "700",
-              letterSpacing: 0.5,
-            }}
+        </h3>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Badge variant={styles.badge}>{urgencyLabels[urgency]}</Badge>
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold border ${classColors[guidelineClass]}`}
           >
-            {urgencyLabels[urgency] ?? urgency.toUpperCase()}
-          </Text>
-          <Badge
-            label={`Class ${guidelineClass}`}
-            color={color}
-            textColor={Colors.white}
-          />
-        </View>
-      </View>
+            Class {guidelineClass}
+          </span>
+        </div>
+      </div>
 
-      <Text
-        style={{
-          color: Colors.primary,
-          fontSize: 13,
-          lineHeight: 20,
-          marginBottom: 10,
-        }}
-      >
+      {/* Description */}
+      <p className="text-xs text-slate-400 leading-relaxed mb-3">
         {description}
-      </Text>
+      </p>
 
+      {/* Actions */}
       {actions.length > 0 && (
-        <View style={{ marginBottom: 10 }}>
-          <Text
-            style={{
-              color: Colors.muted,
-              fontSize: 11,
-              fontWeight: "600",
-              marginBottom: 6,
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-            }}
-          >
-            Action Steps
-          </Text>
-          {actions.map((action, i) => (
-            <View
-              key={i}
-              style={{
-                flexDirection: "row",
-                alignItems: "flex-start",
-                marginBottom: 4,
-              }}
-            >
-              <View
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 10,
-                  backgroundColor: color + "20",
-                  borderWidth: 1,
-                  borderColor: color + "40",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginRight: 8,
-                  marginTop: 1,
-                }}
-              >
-                <Text
-                  style={{
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: "700",
-                  }}
-                >
-                  {i + 1}
-                </Text>
-              </View>
-              <Text
-                style={{
-                  color: Colors.primary,
-                  fontSize: 12,
-                  lineHeight: 18,
-                  flex: 1,
-                }}
-              >
-                {action}
-              </Text>
-            </View>
-          ))}
-        </View>
+        <div className="space-y-1.5 mb-3">
+          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+            Actions
+          </span>
+          <ul className="space-y-1">
+            {actions.map((action, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <CheckCircle2
+                  size={12}
+                  className="text-slate-500 mt-0.5 flex-shrink-0"
+                />
+                <span className="text-xs text-slate-400 leading-relaxed">
+                  {action}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
-      <View
-        style={{
-          borderTopWidth: 0.5,
-          borderTopColor: Colors.cardBorder,
-          paddingTop: 8,
-        }}
-      >
-        <Text
-          style={{
-            color: Colors.muted,
-            fontSize: 11,
-            fontWeight: "600",
-          }}
-        >
-          {guideline}
-        </Text>
-        <Text
-          style={{
-            color: Colors.muted,
-            fontSize: 10,
-            fontStyle: "italic",
-            marginTop: 2,
-          }}
-        >
-          {citation}
-        </Text>
-      </View>
-    </Card>
+      {/* Guideline & Citation */}
+      <div className="flex items-start gap-2 border-t border-navy-600/50 pt-2">
+        <BookOpen size={12} className="text-slate-500 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="text-[10px] text-slate-500">{guideline}</p>
+          <p className="text-[10px] text-slate-600 mt-0.5">{citation}</p>
+        </div>
+      </div>
+    </div>
   );
 }

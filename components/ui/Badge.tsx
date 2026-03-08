@@ -1,32 +1,23 @@
-import { View, Text } from "react-native";
-import { Colors } from "../../constants/theme";
-
 interface BadgeProps {
-  label: string;
-  color?: string;
-  textColor?: string;
+  children: React.ReactNode;
+  variant?: "gold" | "success" | "warning" | "danger" | "muted";
+  className?: string;
 }
 
-export function Badge({
-  label,
-  color = Colors.accent,
-  textColor = Colors.white,
-}: BadgeProps) {
+const variantClasses: Record<string, string> = {
+  gold: "bg-gold/15 text-gold border-gold/30",
+  success: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  warning: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  danger: "bg-red-500/15 text-red-400 border-red-500/30",
+  muted: "bg-slate-500/15 text-slate-400 border-slate-500/30",
+};
+
+export function Badge({ children, variant = "gold", className = "" }: BadgeProps) {
   return (
-    <View
-      style={{
-        backgroundColor: color + "20",
-        borderRadius: 6,
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderWidth: 1,
-        borderColor: color + "40",
-        alignSelf: "flex-start",
-      }}
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${variantClasses[variant]} ${className}`}
     >
-      <Text style={{ color: textColor, fontSize: 11, fontWeight: "600" }}>
-        {label}
-      </Text>
-    </View>
+      {children}
+    </span>
   );
 }

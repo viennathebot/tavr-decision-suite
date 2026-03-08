@@ -1,60 +1,48 @@
-import { View, Text } from "react-native";
-import { Colors } from "../../constants/theme";
-
 interface SeverityBarProps {
-  label: string;
   value: number;
-  max: number;
-  thresholds: { value: number; color: string; label: string }[];
+  thresholds: { label: string; min: number; max: number; color: string }[];
   unit?: string;
+  label: string;
 }
 
-export function SeverityBar({ label, value, max, thresholds, unit }: SeverityBarProps) {
-  const pct = Math.min((value / max) * 100, 100);
-
-  let barColor: string = Colors.muted;
-  let severityLabel = "";
-  for (const t of thresholds) {
-    if (value >= t.value) {
-      barColor = t.color;
-      severityLabel = t.label;
-    }
-  }
+export function SeverityBar({ value, thresholds, unit, label }: SeverityBarProps) {
+  const globalMin = Math.min(...thresholds.map((t) => t.min));
+  const globalMax = Math.max(...thresholds.map((t) => t.max));
+  const range = globalMax - globalMin;
+  const position = Math.max(0, Math.min(100, ((value - globalMin) / range) * 100));
 
   return (
-    <View style={{ marginVertical: 6 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-        <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: "600" }}>
-          {label}
-        </Text>
-        <Text style={{ color: barColor, fontSize: 13, fontFamily: "DMMono_400Regular" }}>
-          {value.toFixed(2)} {unit ?? ""} {severityLabel ? `(${severityLabel})` : ""}
-        </Text>
-      </View>
-      <View
-        style={{
-          height: 6,
-          backgroundColor: Colors.inputBg,
-          borderRadius: 3,
-          overflow: "hidden",
-        }}
-      >
-        <View
-          style={{
-            height: "100%",
-            width: `${pct}%`,
-            backgroundColor: barColor,
-            borderRadius: 3,
-          }}
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between">
+        <span className="text-xs text-slate-400">{label}</span>
+        <span className="text-xs font-mono text-slate-300">
+          {value.toFixed(2)} {unit}
+        </span>
+      </div>
+      <div className="relative h-3 rounded-full overflow-hidden flex">
+        {thresholds.map((t, i) => {
+          const width = ((t.max - t.min) / range) * 100;
+          return (
+            <div
+              key={i}
+              className="h-full"
+              style={{ width: `${width}%`, backgroundColor: t.color }}
+              title={t.label}
+            />
+          );
+        })}
+        <div
+          className="absolute top-0 w-0.5 h-full bg-white shadow-[0_0_4px_white]"
+          style={{ left: `${position}%` }}
         />
-      </View>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 2 }}>
+      </div>
+      <div className="flex justify-between">
         {thresholds.map((t, i) => (
-          <Text key={i} style={{ color: Colors.muted, fontSize: 9 }}>
-            {t.label}: {t.value}
-          </Text>
+          <span key={i} className="text-[9px] text-slate-500">
+            {t.label}
+          </span>
         ))}
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }

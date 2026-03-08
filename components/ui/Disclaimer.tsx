@@ -1,27 +1,14 @@
-import { View, Text } from "react-native";
-import { AlertTriangle } from "lucide-react-native";
-import { Colors } from "../../constants/theme";
+import { AlertTriangle } from "lucide-react";
 
 export function Disclaimer() {
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        backgroundColor: Colors.warning + "10",
-        borderRadius: 8,
-        padding: 12,
-        borderWidth: 1,
-        borderColor: Colors.warning + "30",
-        marginVertical: 8,
-        gap: 10,
-      }}
-    >
-      <AlertTriangle size={16} color={Colors.warning} style={{ marginTop: 2 }} />
-      <Text style={{ color: Colors.muted, fontSize: 11, flex: 1, lineHeight: 16 }}>
-        For educational and case planning use only. Not a substitute for clinical
-        judgment or Heart Team discussion. All sizing data must be verified
-        against current manufacturer IFU.
-      </Text>
-    </View>
+    <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+      <AlertTriangle size={14} className="text-amber-400 mt-0.5 shrink-0" />
+      <p className="text-[10px] text-amber-200/70 leading-relaxed">
+        For educational and clinical decision support only. All calculations and
+        recommendations must be validated by qualified clinicians. Not a substitute
+        for professional clinical judgment or institutional protocols.
+      </p>
+    </div>
   );
 }

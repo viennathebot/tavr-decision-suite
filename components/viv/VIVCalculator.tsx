@@ -1,625 +1,379 @@
-import { useState, useMemo } from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
-import {
-  Repeat2,
-  ArrowRightLeft,
-  AlertTriangle,
-  CheckCircle2,
-} from "lucide-react-native";
-import { useVIVStore } from "../../store/vivStore";
-import { Colors, Spacing, BorderRadius } from "../../constants/theme";
-import { Card } from "../ui/Card";
-import { SegmentedControl } from "../ui/SegmentedControl";
-import { CollapsibleSection } from "../ui/CollapsibleSection";
-import { NumericInput } from "../ui/NumericInput";
-import { Disclaimer } from "../ui/Disclaimer";
-import { VIVValveSelector } from "./VIVValveSelector";
-import { VIVSizingTable } from "./VIVSizingTable";
-import { VIVRiskFlags } from "./VIVRiskFlags";
-import { VIVOutcomeData } from "./VIVOutcomeData";
-import { ManufacturerCard } from "./ManufacturerCard";
+"use client";
+
+import { useMemo } from "react";
+import { useVIVStore } from "@/store/vivStore";
+import { Card } from "@/components/ui/Card";
+import { NumericInput } from "@/components/ui/NumericInput";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Badge } from "@/components/ui/Badge";
 import {
   ALL_SURGICAL_VALVES,
-  ALL_TAVR_VIV_DATA,
-  type SurgicalValveData,
-  type TAVRValveVIVData,
-} from "../../data/viv-data";
+  findTAVRForVIV,
+  getSurgicalValveID,
+} from "@/data/viv-data";
+import { assessVIVRisks } from "@/lib/viv-calculations";
+import { AlertTriangle, CheckCircle, Info, RotateCcw } from "lucide-react";
 
-// ── Access route options ──────────────────────────────────────
 const ACCESS_ROUTES = [
   "Transfemoral",
   "Transapical",
   "Transaortic",
   "Transaxillary",
   "Transcaval",
-] as const;
+];
 
-// ── Risk flag computation ─────────────────────────────────────
-interface RiskFlag {
-  flag: string;
-  level: "high" | "intermediate" | "low";
-  description: string;
-  citation: string;
-}
-
-function computeRiskFlags(state: {
-  procedureType?: string;
-  manufacturer?: string;
-  model?: string;
-  labeledSize?: number;
-  failureMode?: string;
-  coronaryHeightLCA?: number;
-  coronaryHeightRCA?: number;
-  ctInnerDiameter?: number;
-}): RiskFlag[] {
-  const flags: RiskFlag[] = [];
-
-  // Small surgical valve risk
-  if (state.labeledSize !== undefined && state.labeledSize <= 21) {
-    flags.push({
-      flag: "Small Surgical Valve",
-      level: "high",
-      description:
-        "Labeled size <=21 mm is associated with higher residual gradients and increased PPM risk after VIV.",
-      citation: "Dvir D et al. JAMA 2014; 312(2):162-170 (VIVID Registry)",
-    });
-  }
-
-  // Coronary obstruction risk - LCA
-  if (
-    state.coronaryHeightLCA !== undefined &&
-    state.coronaryHeightLCA < 12
-  ) {
-    const level = state.coronaryHeightLCA < 10 ? "high" : "intermediate";
-    flags.push({
-      flag: "Low Coronary Height (LCA)",
-      level,
-      description: `LCA coronary height ${state.coronaryHeightLCA} mm. Height <12 mm increases risk of coronary obstruction. Consider BASILICA or chimney stent if <10 mm.`,
-      citation:
-        "Ribeiro HB et al. JACC CV Interventions 2013; 6(5):452-461",
-    });
-  }
-
-  // Coronary obstruction risk - RCA
-  if (
-    state.coronaryHeightRCA !== undefined &&
-    state.coronaryHeightRCA < 12
-  ) {
-    const level = state.coronaryHeightRCA < 10 ? "high" : "intermediate";
-    flags.push({
-      flag: "Low Coronary Height (RCA)",
-      level,
-      description: `RCA coronary height ${state.coronaryHeightRCA} mm. Height <12 mm increases risk of coronary obstruction.`,
-      citation:
-        "Ribeiro HB et al. JACC CV Interventions 2013; 6(5):452-461",
-    });
-  }
-
-  // Small inner diameter on CT
-  if (state.ctInnerDiameter !== undefined && state.ctInnerDiameter < 20) {
-    flags.push({
-      flag: "Small CT Inner Diameter",
-      level: state.ctInnerDiameter < 17 ? "high" : "intermediate",
-      description: `CT measured inner diameter ${state.ctInnerDiameter} mm. Small internal diameter limits TAVR valve expansion and increases risk of patient-prosthesis mismatch.`,
-      citation: "Dvir D et al. JACC 2012; 60(11):1046-1055",
-    });
-  }
-
-  // Stenosis failure mode
-  if (state.failureMode === "stenosis") {
-    flags.push({
-      flag: "Stenotic Failure Pattern",
-      level: "intermediate",
-      description:
-        "Stenotic degeneration may indicate leaflet thickening/calcification which can impact TAVR deployment and expansion within the surgical frame.",
-      citation: "Dvir D et al. JAMA 2014; 312(2):162-170",
-    });
-  }
-
-  // TAVR-in-TAVR specific
-  if (state.procedureType === "tavr-in-tavr") {
-    flags.push({
-      flag: "TAVR-in-TAVR Procedure",
-      level: "intermediate",
-      description:
-        "Repeat TAVR has limited long-term data. Consider coronary access implications and cumulative height of stacked valve frames.",
-      citation: "Landes U et al. JACC 2020; 76(13):1545-1557",
-    });
-  }
-
-  // No significant risk flags
-  if (flags.length === 0 && state.labeledSize !== undefined) {
-    flags.push({
-      flag: "Standard Risk Profile",
-      level: "low",
-      description:
-        "No high-risk features identified based on current inputs. Standard VIV planning approach appropriate.",
-      citation: "Dvir D et al. JAMA 2014; 312(2):162-170",
-    });
-  }
-
-  return flags;
-}
-
-// ── Main VIV Calculator Component ─────────────────────────────
 export function VIVCalculator() {
-  const procedureType = useVIVStore((s) => s.procedureType);
-  const setProcedureType = useVIVStore((s) => s.setProcedureType);
-  const manufacturer = useVIVStore((s) => s.manufacturer);
-  const model = useVIVStore((s) => s.model);
-  const labeledSize = useVIVStore((s) => s.labeledSize);
-  const failureMode = useVIVStore((s) => s.failureMode);
-  const setFailureMode = useVIVStore((s) => s.setFailureMode);
-  const setField = useVIVStore((s) => s.setField);
-  const ctAnnulusArea = useVIVStore((s) => s.ctAnnulusArea);
-  const ctAnnulusPerimeter = useVIVStore((s) => s.ctAnnulusPerimeter);
-  const ctAnnulusDiameter = useVIVStore((s) => s.ctAnnulusDiameter);
-  const coronaryHeightLCA = useVIVStore((s) => s.coronaryHeightLCA);
-  const coronaryHeightRCA = useVIVStore((s) => s.coronaryHeightRCA);
-  const ctInnerDiameter = useVIVStore((s) => s.ctInnerDiameter);
-  const accessRoutes = useVIVStore((s) => s.accessRoutes);
-  const toggleAccessRoute = useVIVStore((s) => s.toggleAccessRoute);
-  const clearAll = useVIVStore((s) => s.clearAll);
+  const store = useVIVStore();
 
-  const riskFlags = useMemo(
-    () =>
-      computeRiskFlags({
-        procedureType,
-        manufacturer,
-        model,
-        labeledSize,
-        failureMode,
-        coronaryHeightLCA,
-        coronaryHeightRCA,
-        ctInnerDiameter,
-      }),
-    [
-      procedureType,
-      manufacturer,
-      model,
-      labeledSize,
-      failureMode,
-      coronaryHeightLCA,
-      coronaryHeightRCA,
-      ctInnerDiameter,
-    ]
-  );
+  // Derive unique manufacturers
+  const manufacturers = useMemo(() => {
+    const mfgs = new Set(ALL_SURGICAL_VALVES.map((v) => v.manufacturer));
+    return Array.from(mfgs);
+  }, []);
 
-  const hasSelection = manufacturer && model && labeledSize;
+  // Models for selected manufacturer
+  const models = useMemo(() => {
+    if (!store.manufacturer) return [];
+    return ALL_SURGICAL_VALVES.filter(
+      (v) => v.manufacturer === store.manufacturer
+    );
+  }, [store.manufacturer]);
+
+  // Selected valve data
+  const selectedValve = useMemo(() => {
+    if (!store.manufacturer || !store.model) return null;
+    return ALL_SURGICAL_VALVES.find(
+      (v) => v.manufacturer === store.manufacturer && v.model === store.model
+    );
+  }, [store.manufacturer, store.model]);
+
+  // Available sizes
+  const sizes = useMemo(() => {
+    if (!selectedValve) return [];
+    return selectedValve.sizes.map((s) => s.labeledSize);
+  }, [selectedValve]);
+
+  // Surgical valve internal diameter
+  const surgicalValveID = useMemo(() => {
+    if (!selectedValve || !store.labeledSize) return undefined;
+    return getSurgicalValveID(selectedValve, store.labeledSize);
+  }, [selectedValve, store.labeledSize]);
+
+  // Use CT-measured ID if available, otherwise use known ID from data
+  const effectiveID = store.ctInnerDiameter ?? surgicalValveID;
+
+  // Compatible TAVR valves
+  const compatibleTAVR = useMemo(() => {
+    if (!effectiveID) return [];
+    return findTAVRForVIV(effectiveID);
+  }, [effectiveID]);
+
+  // Risk flags
+  const riskFlags = useMemo(() => {
+    return assessVIVRisks({
+      surgicalValveLabeledSize: store.labeledSize,
+      surgicalValveID: effectiveID,
+      coronaryHeightLCA: store.coronaryHeightLCA,
+      coronaryHeightRCA: store.coronaryHeightRCA,
+      failureMode: store.failureMode,
+      procedureType: selectedValve?.stented === false ? "stentless" : undefined,
+    });
+  }, [
+    store.labeledSize,
+    effectiveID,
+    store.coronaryHeightLCA,
+    store.coronaryHeightRCA,
+    store.failureMode,
+    selectedValve,
+  ]);
+
+  const riskIcon = (level: string) => {
+    if (level === "high")
+      return <AlertTriangle size={12} className="text-red-400" />;
+    if (level === "intermediate")
+      return <Info size={12} className="text-amber-400" />;
+    return <CheckCircle size={12} className="text-emerald-400" />;
+  };
+
+  const riskBadgeVariant = (level: string): "danger" | "warning" | "success" => {
+    if (level === "high") return "danger";
+    if (level === "intermediate") return "warning";
+    return "success";
+  };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: Colors.background }}
-      contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 60 }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: Spacing.lg,
-        }}
-      >
-        <Text
-          style={{
-            color: Colors.primary,
-            fontSize: 22,
-            fontWeight: "800",
-          }}
-        >
-          Valve-in-Valve
-        </Text>
-        <Pressable
-          onPress={clearAll}
-          hitSlop={8}
-          style={{
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            borderRadius: BorderRadius.sm,
-            backgroundColor: Colors.danger + "15",
-          }}
-        >
-          <Text
-            style={{ color: Colors.danger, fontSize: 12, fontWeight: "600" }}
+    <div className="space-y-4">
+      {/* Procedure Type & Valve Selection */}
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-slate-200">
+            Valve Selection
+          </h2>
+          <button
+            onClick={store.clearAll}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
           >
-            Clear All
-          </Text>
-        </Pressable>
-      </View>
+            <RotateCcw size={12} />
+            Clear
+          </button>
+        </div>
 
-      <Disclaimer />
-
-      {/* 1. Procedure Type Selector */}
-      <Text
-        style={{
-          color: Colors.primary,
-          fontSize: 14,
-          fontWeight: "600",
-          marginTop: Spacing.lg,
-          marginBottom: Spacing.sm,
-        }}
-      >
-        Procedure Type
-      </Text>
-      <View style={{ flexDirection: "row", gap: Spacing.md }}>
-        <Pressable
-          onPress={() => setProcedureType("tavr-in-savr")}
-          style={{
-            flex: 1,
-            backgroundColor:
-              procedureType === "tavr-in-savr"
-                ? Colors.accent + "20"
-                : Colors.card,
-            borderRadius: BorderRadius.md,
-            borderWidth: 1.5,
-            borderColor:
-              procedureType === "tavr-in-savr"
-                ? Colors.accent
-                : Colors.cardBorder,
-            padding: Spacing.lg,
-            alignItems: "center",
-            gap: Spacing.sm,
-          }}
-        >
-          <Repeat2
-            size={28}
-            color={
-              procedureType === "tavr-in-savr"
-                ? Colors.accent
-                : Colors.muted
-            }
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <SegmentedControl
+            label="Procedure Type"
+            options={[
+              { label: "TAVR-in-SAVR", value: "tavr-in-savr" as const },
+              { label: "TAVR-in-TAVR", value: "tavr-in-tavr" as const },
+            ]}
+            value={store.procedureType}
+            onChange={store.setProcedureType}
           />
-          <Text
-            style={{
-              color:
-                procedureType === "tavr-in-savr"
-                  ? Colors.accent
-                  : Colors.primary,
-              fontSize: 14,
-              fontWeight: "700",
-              textAlign: "center",
-            }}
-          >
-            TAVR-in-SAVR
-          </Text>
-          <Text
-            style={{
-              color: Colors.muted,
-              fontSize: 11,
-              textAlign: "center",
-            }}
-          >
-            TAVR into a failed surgical bioprosthesis
-          </Text>
-        </Pressable>
 
-        <Pressable
-          onPress={() => setProcedureType("tavr-in-tavr")}
-          style={{
-            flex: 1,
-            backgroundColor:
-              procedureType === "tavr-in-tavr"
-                ? Colors.accent + "20"
-                : Colors.card,
-            borderRadius: BorderRadius.md,
-            borderWidth: 1.5,
-            borderColor:
-              procedureType === "tavr-in-tavr"
-                ? Colors.accent
-                : Colors.cardBorder,
-            padding: Spacing.lg,
-            alignItems: "center",
-            gap: Spacing.sm,
-          }}
-        >
-          <ArrowRightLeft
-            size={28}
-            color={
-              procedureType === "tavr-in-tavr"
-                ? Colors.accent
-                : Colors.muted
-            }
-          />
-          <Text
-            style={{
-              color:
-                procedureType === "tavr-in-tavr"
-                  ? Colors.accent
-                  : Colors.primary,
-              fontSize: 14,
-              fontWeight: "700",
-              textAlign: "center",
-            }}
-          >
-            TAVR-in-TAVR
-          </Text>
-          <Text
-            style={{
-              color: Colors.muted,
-              fontSize: 11,
-              textAlign: "center",
-            }}
-          >
-            Repeat TAVR into a failed transcatheter valve
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* 2. Valve Selector */}
-      {procedureType && (
-        <View style={{ marginTop: Spacing.lg }}>
-          <VIVValveSelector />
-        </View>
-      )}
-
-      {/* Manufacturer Info Card */}
-      {manufacturer && model && (
-        <View style={{ marginTop: Spacing.md }}>
-          <ManufacturerCard manufacturer={manufacturer} model={model} />
-        </View>
-      )}
-
-      {/* Sizing Table */}
-      {manufacturer && model && procedureType && (
-        <View style={{ marginTop: Spacing.md }}>
-          <VIVSizingTable
-            manufacturer={manufacturer}
-            model={model}
-            procedureType={procedureType}
-          />
-        </View>
-      )}
-
-      {/* 3. Failure Mode Selector */}
-      {procedureType && (
-        <View style={{ marginTop: Spacing.lg }}>
           <SegmentedControl
             label="Failure Mode"
             options={[
-              { value: "stenosis" as const, label: "Stenosis" },
-              { value: "regurgitation" as const, label: "Regurgitation" },
-              { value: "combined" as const, label: "Combined" },
+              { label: "Stenosis", value: "stenosis" as const },
+              { label: "Regurgitation", value: "regurgitation" as const },
+              { label: "Combined", value: "combined" as const },
             ]}
-            selected={failureMode}
-            onSelect={setFailureMode}
+            value={store.failureMode}
+            onChange={store.setFailureMode}
           />
-        </View>
-      )}
+        </div>
 
-      {/* 4. CT Measurements */}
-      {procedureType && (
-        <View style={{ marginTop: Spacing.md }}>
-          <CollapsibleSection title="Patient CT Measurements" badge="Optional">
-            <NumericInput
-              label="CT Annulus Area"
-              value={ctAnnulusArea}
-              onValueChange={(v) => setField("ctAnnulusArea", v)}
-              unit="mm²"
-              hint="Typical: 300-700"
-              min={100}
-              max={1200}
-              placeholder="e.g. 480"
-            />
-            <NumericInput
-              label="CT Annulus Perimeter"
-              value={ctAnnulusPerimeter}
-              onValueChange={(v) => setField("ctAnnulusPerimeter", v)}
-              unit="mm"
-              hint="Typical: 65-95"
-              min={30}
-              max={150}
-              placeholder="e.g. 78"
-            />
-            <NumericInput
-              label="CT Annulus Diameter"
-              value={ctAnnulusDiameter}
-              onValueChange={(v) => setField("ctAnnulusDiameter", v)}
-              unit="mm"
-              hint="Mean CT diameter"
-              min={10}
-              max={45}
-              placeholder="e.g. 25"
-            />
-            <NumericInput
-              label="Coronary Height (LCA)"
-              value={coronaryHeightLCA}
-              onValueChange={(v) => setField("coronaryHeightLCA", v)}
-              unit="mm"
-              hint="Risk if <12 mm"
-              min={0}
-              max={30}
-              warningMax={12}
-              warningMessage="Low coronary height - obstruction risk"
-              placeholder="e.g. 14"
-            />
-            <NumericInput
-              label="Coronary Height (RCA)"
-              value={coronaryHeightRCA}
-              onValueChange={(v) => setField("coronaryHeightRCA", v)}
-              unit="mm"
-              hint="Risk if <12 mm"
-              min={0}
-              max={30}
-              warningMax={12}
-              warningMessage="Low coronary height - obstruction risk"
-              placeholder="e.g. 16"
-            />
-            <NumericInput
-              label="CT Inner Diameter (Failed Valve)"
-              value={ctInnerDiameter}
-              onValueChange={(v) => setField("ctInnerDiameter", v)}
-              unit="mm"
-              hint="Measured on CT"
-              min={10}
-              max={40}
-              warningMax={20}
-              warningMessage="Small ID - high PPM risk"
-              placeholder="e.g. 20"
-            />
-          </CollapsibleSection>
-        </View>
-      )}
+        {/* Manufacturer */}
+        <div className="mt-3">
+          <label className="text-xs font-medium text-slate-400 block mb-1">
+            Manufacturer
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {manufacturers.map((m) => (
+              <button
+                key={m}
+                onClick={() => store.setManufacturer(m)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  store.manufacturer === m
+                    ? "bg-gold/15 text-gold border-gold/30"
+                    : "bg-navy-700 text-slate-400 border-navy-500 hover:text-slate-200 hover:border-navy-400"
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* 5. Access Route Checkboxes */}
-      {procedureType && (
-        <View style={{ marginTop: Spacing.md }}>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 13,
-              fontWeight: "600",
-              marginBottom: Spacing.sm,
-            }}
-          >
-            Access Routes Under Consideration
-          </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: Spacing.sm,
-            }}
-          >
-            {ACCESS_ROUTES.map((route) => {
-              const isSelected = accessRoutes.includes(route);
-              return (
-                <Pressable
-                  key={route}
-                  onPress={() => toggleAccessRoute(route)}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    borderRadius: BorderRadius.sm,
-                    borderWidth: 1,
-                    borderColor: isSelected
-                      ? Colors.accent
-                      : Colors.cardBorder,
-                    backgroundColor: isSelected
-                      ? Colors.accent + "20"
-                      : Colors.card,
-                  }}
+        {/* Model */}
+        {store.manufacturer && models.length > 0 && (
+          <div className="mt-3">
+            <label className="text-xs font-medium text-slate-400 block mb-1">
+              Model
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {models.map((v) => (
+                <button
+                  key={v.model}
+                  onClick={() => store.setModel(v.model)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                    store.model === v.model
+                      ? "bg-gold/15 text-gold border-gold/30"
+                      : "bg-navy-700 text-slate-400 border-navy-500 hover:text-slate-200 hover:border-navy-400"
+                  }`}
                 >
-                  <View
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: 4,
-                      borderWidth: 1.5,
-                      borderColor: isSelected
-                        ? Colors.accent
-                        : Colors.muted,
-                      backgroundColor: isSelected
-                        ? Colors.accent
-                        : "transparent",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {isSelected && (
-                      <CheckCircle2
-                        size={12}
-                        color={Colors.white}
-                      />
-                    )}
-                  </View>
-                  <Text
-                    style={{
-                      color: isSelected ? Colors.accent : Colors.primary,
-                      fontSize: 13,
-                      fontWeight: isSelected ? "600" : "400",
-                    }}
-                  >
-                    {route}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
+                  {v.model}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-      {/* 6. Results Section - Risk Flags */}
-      {riskFlags.length > 0 && hasSelection && (
-        <View style={{ marginTop: Spacing.xl }}>
-          <Text
-            style={{
-              color: Colors.primary,
-              fontSize: 16,
-              fontWeight: "700",
-              marginBottom: Spacing.md,
-            }}
-          >
-            Risk Assessment
-          </Text>
-          <VIVRiskFlags riskFlags={riskFlags} />
-        </View>
-      )}
-
-      {/* Recommendations Summary */}
-      {hasSelection && (
-        <Card
-          style={{ marginTop: Spacing.lg }}
-          variant={
-            riskFlags.some((f) => f.level === "high") ? "danger" : "default"
-          }
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: Spacing.sm,
-              marginBottom: Spacing.sm,
-            }}
-          >
-            {riskFlags.some((f) => f.level === "high") ? (
-              <AlertTriangle size={18} color={Colors.danger} />
-            ) : (
-              <CheckCircle2 size={18} color={Colors.success} />
+        {/* Size */}
+        {selectedValve && sizes.length > 0 && (
+          <div className="mt-3">
+            <label className="text-xs font-medium text-slate-400 block mb-1">
+              Labeled Size (mm)
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {sizes.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => store.setLabeledSize(s)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                    store.labeledSize === s
+                      ? "bg-gold/15 text-gold border-gold/30"
+                      : "bg-navy-700 text-slate-400 border-navy-500 hover:text-slate-200 hover:border-navy-400"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            {surgicalValveID !== undefined && (
+              <p className="text-[10px] text-slate-500 mt-1">
+                Known internal diameter: {surgicalValveID} mm
+              </p>
             )}
-            <Text
-              style={{
-                color: Colors.primary,
-                fontSize: 15,
-                fontWeight: "700",
-              }}
-            >
-              Planning Summary
-            </Text>
-          </View>
-          <Text
-            style={{
-              color: Colors.muted,
-              fontSize: 12,
-              lineHeight: 18,
-            }}
-          >
-            {procedureType === "tavr-in-savr"
-              ? `TAVR-in-SAVR planned for ${manufacturer} ${model} (${labeledSize}mm)`
-              : `TAVR-in-TAVR planned for ${manufacturer} ${model} (${labeledSize}mm)`}
-            {failureMode
-              ? ` with ${failureMode} pattern.`
-              : "."}
-            {accessRoutes.length > 0
-              ? ` Access: ${accessRoutes.join(", ")}.`
-              : ""}
-            {riskFlags.some((f) => f.level === "high")
-              ? " HIGH-RISK features identified -- Heart Team discussion strongly recommended."
-              : " Standard VIV planning approach appropriate."}
-          </Text>
+          </div>
+        )}
+      </Card>
+
+      {/* CT Measurements */}
+      <Card>
+        <h2 className="text-sm font-semibold text-slate-200 mb-4">
+          CT Measurements
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <NumericInput
+            label="LCA Coronary Height"
+            value={store.coronaryHeightLCA}
+            onChange={(v) => store.setField("coronaryHeightLCA", v)}
+            unit="mm"
+            placeholder="12"
+            min={0}
+            max={30}
+            step={0.1}
+          />
+          <NumericInput
+            label="RCA Coronary Height"
+            value={store.coronaryHeightRCA}
+            onChange={(v) => store.setField("coronaryHeightRCA", v)}
+            unit="mm"
+            placeholder="14"
+            min={0}
+            max={30}
+            step={0.1}
+          />
+          <NumericInput
+            label="CT Inner Diameter"
+            value={store.ctInnerDiameter}
+            onChange={(v) => store.setField("ctInnerDiameter", v)}
+            unit="mm"
+            placeholder="20"
+            min={0}
+            max={40}
+            step={0.1}
+          />
+        </div>
+      </Card>
+
+      {/* Access Routes */}
+      <Card>
+        <h2 className="text-sm font-semibold text-slate-200 mb-3">
+          Access Routes
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {ACCESS_ROUTES.map((route) => {
+            const isActive = store.accessRoutes.includes(route);
+            return (
+              <button
+                key={route}
+                onClick={() => store.toggleAccessRoute(route)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  isActive
+                    ? "bg-gold/15 text-gold border-gold/30"
+                    : "bg-navy-700 text-slate-400 border-navy-500 hover:text-slate-200"
+                }`}
+              >
+                {route}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Risk Flags */}
+      {riskFlags.length > 0 && (
+        <Card>
+          <h2 className="text-sm font-semibold text-slate-200 mb-3">
+            Risk Assessment
+          </h2>
+          <div className="space-y-2">
+            {riskFlags.map((flag, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2 px-3 py-2 rounded-lg bg-navy-700/50 border border-navy-600"
+              >
+                <div className="mt-0.5 shrink-0">{riskIcon(flag.level)}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-slate-200">
+                      {flag.flag}
+                    </span>
+                    <Badge variant={riskBadgeVariant(flag.level)}>
+                      {flag.level}
+                    </Badge>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    {flag.description}
+                  </p>
+                  <p className="text-[9px] text-slate-500 mt-0.5">
+                    {flag.citation}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
 
-      {/* Outcome Data */}
-      {procedureType && (
-        <View style={{ marginTop: Spacing.xl }}>
-          <VIVOutcomeData />
-        </View>
+      {/* Compatible TAVR Valves */}
+      {effectiveID && (
+        <Card>
+          <h2 className="text-sm font-semibold text-slate-200 mb-3">
+            Compatible TAVR Valves
+            <span className="text-xs font-normal text-slate-400 ml-2">
+              (ID: {effectiveID.toFixed(1)} mm)
+            </span>
+          </h2>
+          {compatibleTAVR.length === 0 ? (
+            <p className="text-xs text-slate-500">
+              No compatible TAVR valves found for this surgical valve internal
+              diameter. Consider bioprosthetic valve fracture (BVF) to expand
+              the orifice.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-slate-400 border-b border-navy-600">
+                    <th className="pb-2 pr-4">Manufacturer</th>
+                    <th className="pb-2 pr-4">Model</th>
+                    <th className="pb-2 pr-4">Size</th>
+                    <th className="pb-2 pr-4">Inner D</th>
+                    <th className="pb-2 pr-4">Outer D</th>
+                    <th className="pb-2">Min ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {compatibleTAVR.map((item, i) => (
+                    <tr
+                      key={i}
+                      className="border-b border-navy-600/50 text-slate-300"
+                    >
+                      <td className="py-2 pr-4">
+                        {item.tavrValve.manufacturer}
+                      </td>
+                      <td className="py-2 pr-4">{item.tavrValve.model}</td>
+                      <td className="py-2 pr-4 font-mono text-gold">
+                        {item.size.size}
+                      </td>
+                      <td className="py-2 pr-4 font-mono">
+                        {item.size.innerDiameter}
+                      </td>
+                      <td className="py-2 pr-4 font-mono">
+                        {item.size.outerDiameter}
+                      </td>
+                      <td className="py-2 font-mono">
+                        {item.size.minIDForVIV ?? "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       )}
-    </ScrollView>
+    </div>
   );
 }

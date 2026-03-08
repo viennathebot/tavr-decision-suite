@@ -1,56 +1,30 @@
-import { View, Text } from "react-native";
-import { Colors } from "../../constants/theme";
-
 interface ResultRowProps {
   label: string;
-  value: string | number | undefined;
+  value: string | number;
   unit?: string;
-  severity?: "normal" | "warning" | "danger" | "info";
-  hint?: string;
+  severity?: "normal" | "moderate" | "severe";
+  subtext?: string;
 }
 
-const severityColors = {
-  normal: Colors.success,
-  warning: Colors.warning,
-  danger: Colors.danger,
-  info: Colors.accent,
+const severityColors: Record<string, string> = {
+  normal: "text-emerald-400",
+  moderate: "text-amber-400",
+  severe: "text-red-400",
 };
 
-export function ResultRow({ label, value, unit, severity, hint }: ResultRowProps) {
-  const color = severity ? severityColors[severity] : Colors.primary;
+export function ResultRow({ label, value, unit, severity, subtext }: ResultRowProps) {
+  const valueColor = severity ? severityColors[severity] : "text-gold";
 
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingVertical: 8,
-        borderBottomWidth: 0.5,
-        borderBottomColor: Colors.cardBorder,
-      }}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: Colors.primary, fontSize: 13, fontWeight: "500" }}>
-          {label}
-        </Text>
-        {hint && (
-          <Text style={{ color: Colors.muted, fontSize: 10, marginTop: 1 }}>
-            {hint}
-          </Text>
-        )}
-      </View>
-      <Text
-        style={{
-          color: value !== undefined ? color : Colors.muted,
-          fontSize: 15,
-          fontFamily: "DMMono_400Regular",
-          fontWeight: "600",
-        }}
-      >
-        {value !== undefined ? `${typeof value === "number" ? value.toFixed(2) : value}` : "—"}
-        {value !== undefined && unit ? ` ${unit}` : ""}
-      </Text>
-    </View>
+    <div className="flex items-baseline justify-between py-2 border-b border-navy-600/50 last:border-0">
+      <div className="flex flex-col">
+        <span className="text-xs text-slate-400">{label}</span>
+        {subtext && <span className="text-[10px] text-slate-500">{subtext}</span>}
+      </div>
+      <div className="flex items-baseline gap-1">
+        <span className={`font-mono text-sm font-medium ${valueColor}`}>{value}</span>
+        {unit && <span className="text-[10px] text-slate-500">{unit}</span>}
+      </div>
+    </div>
   );
 }

@@ -1,193 +1,132 @@
-import { View, Text } from "react-native";
-import { Card } from "../ui/Card";
-import { Colors } from "../../constants/theme";
-
 interface CalciumInterpretationProps {
-  calciumScore: number | undefined;
-  sex: "male" | "female" | undefined;
+  calciumScore?: number;
+  sex?: string;
 }
 
-type SeverityLevel = "non-severe" | "indeterminate" | "severe";
+type CalciumSeverity = "severe" | "likely-severe" | "unlikely";
 
-interface Thresholds {
-  nonSevereMax: number;
-  indeterminateMax: number;
-  severeMin: number;
-}
-
-const maleThresholds: Thresholds = {
-  nonSevereMax: 1199,
-  indeterminateMax: 1999,
-  severeMin: 2000,
-};
-
-const femaleThresholds: Thresholds = {
-  nonSevereMax: 799,
-  indeterminateMax: 1199,
-  severeMin: 1200,
-};
-
-const severityColors: Record<SeverityLevel, string> = {
-  "non-severe": Colors.success,
-  indeterminate: Colors.warning,
-  severe: Colors.danger,
-};
-
-const severityLabels: Record<SeverityLevel, string> = {
-  "non-severe": "Non-Severe (Unlikely Severe AS)",
-  indeterminate: "Indeterminate",
-  severe: "Severe (Likely Severe AS)",
-};
-
-function classifyCalcium(
+function interpretCalcium(
   score: number,
-  thresholds: Thresholds
-): SeverityLevel {
-  if (score < thresholds.severeMin && score > thresholds.nonSevereMax) {
-    return "indeterminate";
+  sex?: string,
+): { severity: CalciumSeverity; label: string } {
+  const isFemale =
+    sex?.toLowerCase() === "female" || sex?.toLowerCase() === "f";
+
+  if (isFemale) {
+    if (score >= 1200) {
+      return { severity: "severe", label: "Severe AS" };
+    }
+    if (score >= 800) {
+      return { severity: "likely-severe", label: "Likely Severe AS" };
+    }
+    return { severity: "unlikely", label: "Unlikely Severe AS" };
   }
-  if (score >= thresholds.severeMin) {
-    return "severe";
+
+  // Male or unknown
+  if (score >= 2000) {
+    return { severity: "severe", label: "Severe AS" };
   }
-  return "non-severe";
+  if (score >= 1200) {
+    return { severity: "likely-severe", label: "Likely Severe AS" };
+  }
+  return { severity: "unlikely", label: "Unlikely Severe AS" };
 }
+
+const severityColors: Record<CalciumSeverity, { bg: string; border: string; text: string; dot: string }> = {
+  severe: {
+    bg: "bg-red-500/10",
+    border: "border-red-500/30",
+    text: "text-red-400",
+    dot: "bg-red-400",
+  },
+  "likely-severe": {
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/30",
+    text: "text-amber-400",
+    dot: "bg-amber-400",
+  },
+  unlikely: {
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/30",
+    text: "text-emerald-400",
+    dot: "bg-emerald-400",
+  },
+};
 
 export function CalciumInterpretation({
   calciumScore,
   sex,
 }: CalciumInterpretationProps) {
-  if (calciumScore === undefined || sex === undefined) {
-    return (
-      <Card style={{ marginVertical: 6 }}>
-        <Text
-          style={{
-            color: Colors.muted,
-            fontSize: 13,
-            fontStyle: "italic",
-          }}
-        >
-          Enter calcium score and sex to see calcium-based severity
-          interpretation.
-        </Text>
-      </Card>
-    );
-  }
+  if (calciumScore === undefined) return null;
 
-  const thresholds = sex === "male" ? maleThresholds : femaleThresholds;
-  const severity = classifyCalcium(calciumScore, thresholds);
-  const color = severityColors[severity];
-  const label = severityLabels[severity];
+  const result = interpretCalcium(calciumScore, sex);
+  const colors = severityColors[result.severity];
 
   return (
-    <Card
-      style={{
-        marginVertical: 6,
-        borderLeftWidth: 4,
-        borderLeftColor: color,
-      }}
-    >
-      <Text
-        style={{
-          color: Colors.primary,
-          fontSize: 14,
-          fontWeight: "700",
-          marginBottom: 8,
-        }}
-      >
-        CT Calcium Score Interpretation
-      </Text>
+    <div className={`rounded-xl border p-4 ${colors.bg} ${colors.border}`}>
+      <h3 className="text-sm font-semibold text-slate-200 mb-2">
+        AV Calcium Interpretation
+      </h3>
 
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          marginBottom: 10,
-          gap: 8,
-        }}
-      >
-        <View
-          style={{
-            width: 12,
-            height: 12,
-            borderRadius: 6,
-            backgroundColor: color,
-          }}
-        />
-        <Text style={{ color: color, fontSize: 15, fontWeight: "700" }}>
-          {label}
-        </Text>
-      </View>
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
+        <span className={`text-sm font-medium ${colors.text}`}>
+          {calciumScore} AU &mdash; {result.label}
+        </span>
+      </div>
 
-      <Text
-        style={{
-          color: Colors.primary,
-          fontSize: 13,
-          fontFamily: "DMMono_400Regular",
-          marginBottom: 8,
-        }}
-      >
-        Score: {calciumScore} AU ({sex === "male" ? "Male" : "Female"})
-      </Text>
+      {/* Threshold Reference Table */}
+      <div className="rounded-lg border border-navy-600 overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-navy-700">
+              <th className="text-left px-3 py-1.5 text-slate-400 font-medium">
+                Severity
+              </th>
+              <th className="text-left px-3 py-1.5 text-slate-400 font-medium">
+                Male (AU)
+              </th>
+              <th className="text-left px-3 py-1.5 text-slate-400 font-medium">
+                Female (AU)
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-navy-600/50">
+            <tr className="bg-navy-800/50">
+              <td className="px-3 py-1.5 text-red-400">Severe</td>
+              <td className="px-3 py-1.5 text-slate-300 font-mono">
+                &ge;2000
+              </td>
+              <td className="px-3 py-1.5 text-slate-300 font-mono">
+                &ge;1200
+              </td>
+            </tr>
+            <tr className="bg-navy-800/50">
+              <td className="px-3 py-1.5 text-amber-400">Likely Severe</td>
+              <td className="px-3 py-1.5 text-slate-300 font-mono">
+                1200&ndash;1999
+              </td>
+              <td className="px-3 py-1.5 text-slate-300 font-mono">
+                800&ndash;1199
+              </td>
+            </tr>
+            <tr className="bg-navy-800/50">
+              <td className="px-3 py-1.5 text-emerald-400">Unlikely Severe</td>
+              <td className="px-3 py-1.5 text-slate-300 font-mono">
+                &lt;1200
+              </td>
+              <td className="px-3 py-1.5 text-slate-300 font-mono">
+                &lt;800
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      {/* Threshold table */}
-      <View
-        style={{
-          backgroundColor: Colors.inputBg,
-          borderRadius: 8,
-          padding: 10,
-          marginBottom: 8,
-        }}
-      >
-        <Text
-          style={{
-            color: Colors.muted,
-            fontSize: 11,
-            fontWeight: "600",
-            marginBottom: 6,
-            textTransform: "uppercase",
-            letterSpacing: 0.5,
-          }}
-        >
-          {sex === "male" ? "Male" : "Female"} Thresholds
-        </Text>
-
-        <View style={{ flexDirection: "row", marginBottom: 4 }}>
-          <View
-            style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.success, marginRight: 8, marginTop: 2 }}
-          />
-          <Text style={{ color: Colors.primary, fontSize: 12 }}>
-            Non-severe: {"<"}{sex === "male" ? "1200" : "800"} AU
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: "row", marginBottom: 4 }}>
-          <View
-            style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.warning, marginRight: 8, marginTop: 2 }}
-          />
-          <Text style={{ color: Colors.primary, fontSize: 12 }}>
-            Indeterminate: {sex === "male" ? "1200-1999" : "800-1199"} AU
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: "row" }}>
-          <View
-            style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.danger, marginRight: 8, marginTop: 2 }}
-          />
-          <Text style={{ color: Colors.primary, fontSize: 12 }}>
-            Severe: {">="}{sex === "male" ? "2000" : "1200"} AU
-          </Text>
-        </View>
-      </View>
-
-      <Text
-        style={{
-          color: Colors.muted,
-          fontSize: 10,
-          fontStyle: "italic",
-        }}
-      >
-        Clavel MA et al. Circulation 2014;129:2516-2525.
-      </Text>
-    </Card>
+      <p className="text-[10px] text-slate-500 mt-2">
+        Clavel MA et al. JACC 2014;63:1724-1735 &amp; Heart
+        2015;101:1881-1888
+      </p>
+    </div>
   );
 }

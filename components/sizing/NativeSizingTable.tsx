@@ -1,193 +1,115 @@
-import { View, Text, ScrollView } from "react-native";
-import { Colors } from "../../constants/theme";
+"use client";
 
-interface SizingRow {
-  size: number | string;
-  annulusAreaRange: [number, number];
-  annulusPerimeterRange?: [number, number];
-  annulusDiameterRange?: [number, number];
-  sheathSize?: string;
-  minVesselDiameter?: number;
-}
+import { useMemo } from "react";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { findSuitableValves, ALL_TAVR_VALVES } from "@/data/valve-sizing";
+import type { TAVRValveModel, TAVRValveSize } from "@/data/valve-sizing";
 
 interface NativeSizingTableProps {
-  manufacturer: string;
-  model: string;
-  selfExpanding: boolean;
-  sizes: SizingRow[];
-  notes?: string;
-  highlightArea?: number;
-  pacemakerRate?: string;
+  annulusArea?: number;
+  annulusPerimeter?: number;
+  annulusDiameter?: number;
 }
 
 export function NativeSizingTable({
-  manufacturer,
-  model,
-  selfExpanding,
-  sizes,
-  notes,
-  highlightArea,
-  pacemakerRate,
+  annulusArea,
+  annulusPerimeter,
+  annulusDiameter,
 }: NativeSizingTableProps) {
-  const getHighlightForRow = (row: SizingRow): boolean => {
-    if (highlightArea === undefined) return false;
-    return highlightArea >= row.annulusAreaRange[0] && highlightArea <= row.annulusAreaRange[1];
-  };
+  const hasInput =
+    annulusArea !== undefined &&
+    annulusArea > 0;
+
+  const matchingValves = useMemo(() => {
+    if (!hasInput || annulusArea === undefined) return [];
+    return findSuitableValves(annulusArea, annulusPerimeter, annulusDiameter);
+  }, [hasInput, annulusArea, annulusPerimeter, annulusDiameter]);
+
+  // Build a flat list of all valves for the reference table
+  const allValves = useMemo(() => {
+    const list: {
+      model: TAVRValveModel;
+      size: TAVRValveSize;
+      isMatch: boolean;
+    }[] = [];
+
+    for (const model of ALL_TAVR_VALVES) {
+      for (const size of model.sizes) {
+        const isMatch = matchingValves.some(
+          (mv) =>
+            mv.model.model === model.model &&
+            mv.size.size === size.size
+        );
+        list.push({ model, size, isMatch });
+      }
+    }
+    return list;
+  }, [matchingValves]);
 
   return (
-    <View
-      style={{
-        backgroundColor: Colors.card,
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: Colors.cardBorder,
-      }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 8 }}>
-        <Text style={{ color: Colors.primary, fontSize: 15, fontWeight: "700", flex: 1 }}>
-          {manufacturer} {model}
-        </Text>
-        <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
-          {pacemakerRate && (
-            <View
-              style={{
-                backgroundColor: Colors.danger + "15",
-                borderRadius: 4,
-                paddingHorizontal: 5,
-                paddingVertical: 2,
-              }}
-            >
-              <Text style={{ color: Colors.danger, fontSize: 9, fontWeight: "600" }}>
-                PPM {pacemakerRate}
-              </Text>
-            </View>
-          )}
-          <View
-            style={{
-              backgroundColor: selfExpanding ? Colors.warning + "20" : Colors.accent + "20",
-              borderRadius: 4,
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-            }}
-          >
-            <Text
-              style={{
-                color: selfExpanding ? Colors.warning : Colors.accent,
-                fontSize: 9,
-                fontWeight: "600",
-              }}
-            >
-              {selfExpanding ? "Self-Expanding" : "Balloon-Expandable"}
-            </Text>
-          </View>
-        </View>
-      </View>
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-slate-200">
+          {hasInput ? "Matching TAVR Valve Sizes" : "TAVR Valve Sizing Reference"}
+        </h2>
+        {hasInput && matchingValves.length > 0 && (
+          <Badge variant="gold">
+            {matchingValves.length} match{matchingValves.length > 1 ? "es" : ""}
+          </Badge>
+        )}
+      </div>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View>
-          {/* Header */}
-          <View
-            style={{
-              flexDirection: "row",
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.cardBorder,
-              paddingBottom: 6,
-              marginBottom: 4,
-            }}
-          >
-            <Text style={[headerCell, { width: 60 }]}>Size</Text>
-            <Text style={[headerCell, { width: 120 }]}>Area (mm{"\u00B2"})</Text>
-            {sizes[0]?.annulusPerimeterRange && (
-              <Text style={[headerCell, { width: 110 }]}>Perimeter (mm)</Text>
-            )}
-            {sizes[0]?.annulusDiameterRange && (
-              <Text style={[headerCell, { width: 110 }]}>Diameter (mm)</Text>
-            )}
-            {sizes[0]?.sheathSize && (
-              <Text style={[headerCell, { width: 80 }]}>Sheath</Text>
-            )}
-            {sizes[0]?.minVesselDiameter && (
-              <Text style={[headerCell, { width: 70 }]}>Min Vessel</Text>
-            )}
-          </View>
-
-          {/* Rows */}
-          {sizes.map((row, i) => {
-            const isHighlighted = getHighlightForRow(row);
-            return (
-              <View
-                key={i}
-                style={{
-                  flexDirection: "row",
-                  paddingVertical: 6,
-                  backgroundColor: isHighlighted
-                    ? Colors.accent + "15"
-                    : i % 2 === 0
-                    ? "transparent"
-                    : Colors.inputBg + "40",
-                  borderRadius: isHighlighted ? 4 : 0,
-                }}
-              >
-                <Text
-                  style={[
-                    dataCell,
-                    {
-                      width: 60,
-                      fontWeight: "600",
-                      color: isHighlighted ? Colors.accent : Colors.primary,
-                    },
-                  ]}
-                >
-                  {row.size}mm
-                </Text>
-                <Text style={[dataCell, { width: 120 }]}>
-                  {row.annulusAreaRange[0]}-{row.annulusAreaRange[1]}
-                </Text>
-                {row.annulusPerimeterRange && (
-                  <Text style={[dataCell, { width: 110 }]}>
-                    {row.annulusPerimeterRange[0]}-{row.annulusPerimeterRange[1]}
-                  </Text>
-                )}
-                {row.annulusDiameterRange && (
-                  <Text style={[dataCell, { width: 110 }]}>
-                    {row.annulusDiameterRange[0]}-{row.annulusDiameterRange[1]}
-                  </Text>
-                )}
-                {row.sheathSize && (
-                  <Text style={[dataCell, { width: 80 }]}>{row.sheathSize}</Text>
-                )}
-                {row.minVesselDiameter && (
-                  <Text style={[dataCell, { width: 70 }]}>
-                    {row.minVesselDiameter.toFixed(1)}mm
-                  </Text>
-                )}
-              </View>
-            );
-          })}
-        </View>
-      </ScrollView>
-
-      {notes && (
-        <Text style={{ color: Colors.muted, fontSize: 10, marginTop: 8, lineHeight: 14 }}>
-          {notes}
-        </Text>
+      {hasInput && matchingValves.length === 0 && (
+        <p className="text-xs text-slate-500 mb-3">
+          No valve sizes match the provided annulus dimensions. Check measurements
+          or consider borderline sizing with Heart Team discussion.
+        </p>
       )}
-    </View>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-left text-slate-400 border-b border-navy-600">
+              <th className="pb-2 pr-3">Manufacturer</th>
+              <th className="pb-2 pr-3">Model</th>
+              <th className="pb-2 pr-3">Size</th>
+              <th className="pb-2 pr-3">
+                Area Range (mm<sup>2</sup>)
+              </th>
+              <th className="pb-2 pr-3">Sheath</th>
+              <th className="pb-2">Min Vessel</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allValves.map((item, i) => (
+              <tr
+                key={`${item.model.model}-${item.size.size}-${i}`}
+                className={`border-b border-navy-600/50 ${
+                  item.isMatch
+                    ? "bg-gold/5 text-gold"
+                    : "text-slate-300"
+                }`}
+              >
+                <td className="py-2 pr-3">{item.model.manufacturer}</td>
+                <td className="py-2 pr-3">{item.model.model}</td>
+                <td className="py-2 pr-3 font-mono font-medium">
+                  {item.size.size}
+                </td>
+                <td className="py-2 pr-3 font-mono">
+                  {item.size.annulusAreaRange[0]}-{item.size.annulusAreaRange[1]}
+                </td>
+                <td className="py-2 pr-3">{item.size.sheathSize ?? "-"}</td>
+                <td className="py-2 font-mono">
+                  {item.size.minVesselDiameter
+                    ? `${item.size.minVesselDiameter} mm`
+                    : "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }
-
-const headerCell = {
-  color: Colors.muted,
-  fontSize: 11,
-  fontWeight: "600" as const,
-  paddingHorizontal: 4,
-};
-
-const dataCell = {
-  color: Colors.primary,
-  fontSize: 12,
-  fontFamily: "DMMono_400Regular",
-  paddingHorizontal: 4,
-};
