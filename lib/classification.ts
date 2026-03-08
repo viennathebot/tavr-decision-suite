@@ -164,7 +164,8 @@ export function clavelClassify(input: {
   }
 
   // ── Discordant Normal-Flow Low-Gradient ───────────────────────────────────
-  if (ava < 1.0 && meanGradient < 40 && (svi === undefined || svi >= 35)) {
+  // Requires either preserved EF or confirmed normal flow (SVI >= 35)
+  if (ava < 1.0 && meanGradient < 40 && (lvef === undefined || lvef >= 50) && (svi === undefined || svi >= 35)) {
     const result: ClavelResult = {
       category: 'discordant-normal-flow-lg',
       label: 'Discordant Normal-Flow Low-Gradient',

@@ -61,9 +61,11 @@ function isCalciumSevere(score: number, sex?: string): boolean {
 }
 
 function calciumSeverityLabel(score: number, sex?: string): string {
-  const threshold = sex?.toLowerCase() === 'female' || sex?.toLowerCase() === 'f' ? 1200 : 2000;
-  if (score >= threshold) return 'above sex-specific threshold for severe AS';
-  if (score >= threshold * 0.5) return 'in the indeterminate zone';
+  const isFemale = sex?.toLowerCase() === 'female' || sex?.toLowerCase() === 'f';
+  const severeThreshold = isFemale ? 1200 : 2000;
+  const indeterminateThreshold = isFemale ? 800 : 1200;
+  if (score >= severeThreshold) return 'above sex-specific threshold for severe AS';
+  if (score >= indeterminateThreshold) return 'in the indeterminate zone';
   return 'below threshold, unlikely severe AS';
 }
 
