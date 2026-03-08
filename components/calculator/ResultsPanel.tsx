@@ -4,6 +4,7 @@ import { useCalculatorStore } from "../../store/calculatorStore";
 import * as calc from "../../lib/calculations";
 import { classifyAS } from "../../lib/classification";
 import { generateRecommendations } from "../../lib/recommendations";
+import { calculateSTSPROM, type STSResult } from "../../lib/sts-prom";
 import { Card } from "../ui/Card";
 import { ResultRow } from "../ui/ResultRow";
 import { SeverityBar } from "../ui/SeverityBar";
@@ -121,13 +122,42 @@ function useComputedResults() {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
+const stsRiskColors: Record<string, string> = {
+  low: Colors.success,
+  intermediate: Colors.warning,
+  high: Colors.danger,
+  extreme: Colors.danger,
+};
+
 export function ResultsPanel() {
   const echo = useCalculatorStore((s) => s.echo);
   const demographics = useCalculatorStore((s) => s.demographics);
   const ct = useCalculatorStore((s) => s.ct);
+  const sts = useCalculatorStore((s) => s.sts);
   const results = useComputedResults();
 
   const dobutamine = useCalculatorStore((s) => s.dobutamine);
+
+  // STS-PROM
+  const stsResult = useMemo<STSResult>(() => {
+    return calculateSTSPROM({
+      age: demographics.age,
+      sex: demographics.sex,
+      heightCm: demographics.heightCm,
+      weightKg: demographics.weightKg,
+      creatinine: sts.creatinine,
+      diabetes: sts.diabetes,
+      nyhaClass: demographics.nyhaClass,
+      priorCardiacSurgery: sts.priorCardiacSurgery,
+      lvef: echo.lvef,
+      urgency: sts.urgency,
+      endocarditis: sts.endocarditis,
+      chronicLungDisease: sts.chronicLungDisease,
+      peripheralVascularDisease: sts.peripheralVascularDisease,
+      cerebrovascularDisease: sts.cerebrovascularDisease,
+      preoperativeDialysis: sts.preoperativeDialysis,
+    });
+  }, [demographics, echo.lvef, sts]);
 
   // Classification (with Clavel 2015 inputs)
   const classification = useMemo(() => {
@@ -166,11 +196,13 @@ export function ResultsPanel() {
         hasDobutamineData,
         stressAVA: dobutamine.stressAVA,
         stressMeanGradient: dobutamine.stressMeanGradient,
+        stsMortality: stsResult.sufficient ? stsResult.mortality : undefined,
+        stsRiskCategory: stsResult.sufficient ? stsResult.category : undefined,
       });
     } catch {
       return [];
     }
-  }, [classification, results, echo, ct, demographics]);
+  }, [classification, results, echo, ct, demographics, dobutamine, stsResult]);
 
   const hasAnyResult =
     results.bsa !== undefined ||
@@ -363,6 +395,96 @@ export function ResultsPanel() {
               ]}
             />
           )}
+        </Card>
+      )}
+
+      {/* ── STS-PROM Risk Summary ─────────────────────────────────────── */}
+      {stsResult.sufficient && (
+        <Card
+          style={{
+            borderLeftWidth: 4,
+            borderLeftColor: stsRiskColors[stsResult.category] ?? Colors.muted,
+          }}
+        >
+          <Text
+            style={{
+              color: Colors.primary,
+              fontSize: 14,
+              fontWeight: "700",
+              marginBottom: 8,
+            }}
+          >
+            STS-PROM Risk Summary
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "baseline",
+              marginBottom: 6,
+            }}
+          >
+            <Text
+              style={{
+                color: stsRiskColors[stsResult.category],
+                fontSize: 28,
+                fontWeight: "800",
+                fontFamily: "DMMono_500Medium",
+              }}
+            >
+              {stsResult.mortality.toFixed(1)}
+            </Text>
+            <Text
+              style={{
+                color: stsRiskColors[stsResult.category],
+                fontSize: 14,
+                fontWeight: "600",
+                marginLeft: 2,
+              }}
+            >
+              %
+            </Text>
+            <Text
+              style={{
+                color: stsRiskColors[stsResult.category],
+                fontSize: 13,
+                fontWeight: "700",
+                marginLeft: 12,
+              }}
+            >
+              {stsResult.categoryLabel}
+            </Text>
+          </View>
+          <Text
+            style={{
+              color: Colors.primary,
+              fontSize: 12,
+              lineHeight: 18,
+              marginBottom: 6,
+            }}
+          >
+            {stsResult.interpretation}
+          </Text>
+          {demographics.heightCm !== undefined &&
+            demographics.weightKg !== undefined && (
+              <Text style={{ color: Colors.muted, fontSize: 11 }}>
+                BMI:{" "}
+                {(
+                  demographics.weightKg /
+                  Math.pow(demographics.heightCm / 100, 2)
+                ).toFixed(1)}{" "}
+                kg/m{"\u00B2"}
+              </Text>
+            )}
+          <Text
+            style={{
+              color: Colors.muted,
+              fontSize: 9,
+              fontStyle: "italic",
+              marginTop: 6,
+            }}
+          >
+            Simplified estimate. Use sts.org for official STS-PROM.
+          </Text>
         </Card>
       )}
 

@@ -48,6 +48,10 @@ export interface RecommendationInput {
   stressAVA?: number;
   /** Mean gradient at peak dobutamine stress (mmHg) */
   stressMeanGradient?: number;
+  /** STS-PROM estimated 30-day mortality (%) */
+  stsMortality?: number;
+  /** STS-PROM risk category */
+  stsRiskCategory?: 'low' | 'intermediate' | 'high' | 'extreme';
 }
 
 // ─── Calcium Score Helpers ───────────────────────────────────────────────────
@@ -598,6 +602,91 @@ export function generateRecommendations(input: RecommendationInput): Recommendat
 
     default:
       break;
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // STS-PROM RISK-STRATIFIED TAVR vs SAVR GUIDANCE
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (input.stsRiskCategory && input.stsMortality !== undefined) {
+    const mort = input.stsMortality.toFixed(1);
+    switch (input.stsRiskCategory) {
+      case 'low':
+        recs.push({
+          title: `STS-PROM ${mort}% — Low Surgical Risk`,
+          description:
+            'Low surgical risk. Both SAVR and TAVR are guideline-supported options. ' +
+            'For patients aged >=65 years, TAVR is a Class I recommendation based on ' +
+            'PARTNER 3 and Evolut Low Risk trials showing non-inferior outcomes at 2 years.',
+          urgency: 'watch',
+          actions: [
+            'Heart Team discussion: TAVR vs SAVR based on anatomy, durability, and patient preference',
+            'Consider patient age and expected valve durability (mechanical vs bioprosthetic vs TAVR)',
+            'If age <65 and no contraindication to anticoagulation: SAVR may be preferred for durability',
+            'If age >=65: TAVR is Class I (PARTNER 3, Evolut Low Risk)',
+          ],
+          guideline: 'ACC/AHA 2020 VHD Guidelines',
+          guidelineClass: 'I',
+          citation: 'Mack MJ et al. NEJM 2019;380:1695 (PARTNER 3); Popma JJ et al. NEJM 2019;380:1695 (Evolut Low Risk)',
+        });
+        break;
+      case 'intermediate':
+        recs.push({
+          title: `STS-PROM ${mort}% — Intermediate Surgical Risk`,
+          description:
+            'Intermediate surgical risk. Both SAVR and TAVR are Class I recommendations. ' +
+            'PARTNER 2 and SURTAVI trials demonstrated TAVR non-inferiority to SAVR at 5 years.',
+          urgency: 'moderate',
+          actions: [
+            'Heart Team discussion for shared decision-making',
+            'TAVR and SAVR are both Class I — decision driven by anatomy and patient factors',
+            'Consider transfemoral TAVR if vascular access is suitable',
+            'Assess coronary anatomy: concomitant CABG may favor SAVR',
+          ],
+          guideline: 'ACC/AHA 2020 VHD Guidelines',
+          guidelineClass: 'I',
+          citation: 'Leon MB et al. NEJM 2016;374:1609 (PARTNER 2); Reardon MJ et al. NEJM 2017;376:1321 (SURTAVI)',
+        });
+        break;
+      case 'high':
+        recs.push({
+          title: `STS-PROM ${mort}% — High Surgical Risk`,
+          description:
+            'High surgical risk. TAVR is generally preferred over SAVR (Class I). ' +
+            'CoreValve High Risk and PARTNER 1 trials demonstrated TAVR superiority or non-inferiority.',
+          urgency: 'high',
+          actions: [
+            'TAVR is preferred approach (Class I)',
+            'CT angiography for TAVR planning and vascular access assessment',
+            'Assess frailty — 5-meter walk test, grip strength, serum albumin',
+            'Optimise comorbidities pre-procedure (renal function, nutrition, anaemia)',
+          ],
+          guideline: 'ACC/AHA 2020 VHD Guidelines',
+          guidelineClass: 'I',
+          citation: 'Adams DH et al. NEJM 2014;370:1790 (CoreValve High Risk); Smith CR et al. NEJM 2011;364:2187 (PARTNER 1)',
+        });
+        break;
+      case 'extreme':
+        recs.push({
+          title: `STS-PROM ${mort}% — Extreme/Prohibitive Risk`,
+          description:
+            'Extreme or prohibitive surgical risk. TAVR is the recommended approach if expected ' +
+            'post-procedure survival >12 months with acceptable quality of life (Class I). ' +
+            'Assess for futility — severe frailty, advanced dementia, or severe concurrent illness ' +
+            'may render intervention futile.',
+          urgency: 'high',
+          actions: [
+            'TAVR is recommended if life expectancy >12 months post-procedure (Class I)',
+            'Formal futility assessment: frailty index, cognitive screening (MMSE/MoCA)',
+            'Palliative care consultation if futility concerns exist',
+            'Discuss goals of care with patient and family',
+            'If proceeding: minimalist TAVR approach (conscious sedation, TF access) may reduce risk',
+          ],
+          guideline: 'ACC/AHA 2020 VHD Guidelines',
+          guidelineClass: 'I',
+          citation: 'Leon MB et al. NEJM 2010;363:1597 (PARTNER 1B — inoperable cohort)',
+        });
+        break;
+    }
   }
 
   return recs;
