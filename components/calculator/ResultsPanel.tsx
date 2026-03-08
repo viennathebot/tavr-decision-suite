@@ -153,6 +153,9 @@ export function ResultsPanel() {
   const recommendations = useMemo(() => {
     if (!classification) return [];
     try {
+      const hasDobutamineData =
+        dobutamine.stressAVA !== undefined ||
+        dobutamine.stressMeanGradient !== undefined;
       return generateRecommendations({
         pattern: classification.pattern,
         symptomatic: demographics.symptomatic ?? false,
@@ -160,7 +163,9 @@ export function ResultsPanel() {
         calciumScore: ct.calciumScore,
         sex: demographics.sex,
         nyhaClass: demographics.nyhaClass,
-        hasDobutamineData: false,
+        hasDobutamineData,
+        stressAVA: dobutamine.stressAVA,
+        stressMeanGradient: dobutamine.stressMeanGradient,
       });
     } catch {
       return [];
