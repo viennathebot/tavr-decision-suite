@@ -36,16 +36,16 @@ export const SAPIEN_3: TAVRValveModel = {
       size: 20,
       annulusAreaRange: [273, 345],
       annulusPerimeterRange: [58.5, 65.9],
-      annulusDiameterRange: [18.0, 21.0],
+      annulusDiameterRange: [18.6, 20.9],
       sheathSize: '14F eSheath',
-      minVesselDiameter: 5.0,
-      notes: 'Smallest size; perimeter <66 mm. eSheath OD 14F (4.7mm) expands to 16F',
+      minVesselDiameter: 5.5,
+      notes: 'Smallest size; perimeter <66 mm',
     },
     {
       size: 23,
       annulusAreaRange: [338, 430],
       annulusPerimeterRange: [65.2, 73.6],
-      annulusDiameterRange: [19.5, 23.0],
+      annulusDiameterRange: [20.7, 23.4],
       sheathSize: '14F eSheath',
       minVesselDiameter: 5.5,
       notes: 'Most common size for smaller annuli',
@@ -54,25 +54,26 @@ export const SAPIEN_3: TAVRValveModel = {
       size: 26,
       annulusAreaRange: [430, 546],
       annulusPerimeterRange: [73.6, 82.8],
-      annulusDiameterRange: [23.0, 26.0],
-      sheathSize: '16F eSheath',
+      annulusDiameterRange: [23.4, 26.4],
+      sheathSize: '14F eSheath',
       minVesselDiameter: 5.5,
-      notes: 'Intermediate size; requires 16F expandable sheath',
+      notes: 'Intermediate size; 14F eSheath (Commander delivery system)',
     },
     {
       size: 29,
-      annulusAreaRange: [546, 683],
-      annulusPerimeterRange: [82.8, 92.7],
-      annulusDiameterRange: [26.0, 29.0],
-      sheathSize: '16F eSheath',
+      annulusAreaRange: [540, 683],
+      annulusPerimeterRange: [82.3, 92.7],
+      annulusDiameterRange: [26.2, 29.5],
+      sheathSize: '14F eSheath',
       minVesselDiameter: 6.0,
-      notes: 'Largest SAPIEN 3; for perimeter >82.8 mm',
+      notes: 'Largest SAPIEN 3; 14F eSheath but requires 6.0mm min vessel',
     },
   ],
   generalNotes:
     'Balloon-expandable valve. Sizing based on CT annulus area and perimeter. ' +
-    'eSheath expandable delivery system (Commander). Min vessel: 5.0mm (20mm), 5.5mm (23/26mm), 6.0mm (29mm). ' +
-    'Pacemaker rate 6-8% (PARTNER 3). Overlap zones between sizes require clinical judgment.',
+    'eSheath expandable delivery system (Commander). 14F eSheath for all sizes. ' +
+    'Min vessel: 5.5mm (20/23/26mm), 6.0mm (29mm). ' +
+    'Pacemaker rate 6-8% (PARTNER 3, 6.5% at 30 days). Overlap zones between sizes require clinical judgment.',
 };
 
 // ── Edwards SAPIEN 3 Ultra / Ultra RESILIA ──────────────────
@@ -80,49 +81,49 @@ export const SAPIEN_3_ULTRA: TAVRValveModel = {
   manufacturer: 'Edwards Lifesciences',
   model: 'SAPIEN 3 Ultra / Ultra RESILIA',
   selfExpanding: false,
-  pacemakerRate: '6-8%',
-  pacemakerRateCitation: 'PARTNER 3 Trial (Mack MJ et al. NEJM 2019;380:1695-1705)',
+  pacemakerRate: '5-7%',
+  pacemakerRateCitation: 'OCEAN-TAVI Registry (S3UR 5.6%), S3U Registry (4.4-6.4%)',
   sizes: [
     {
       size: 20,
-      annulusAreaRange: [254, 314],
-      annulusPerimeterRange: [56.0, 63.0],
-      annulusDiameterRange: [18.0, 20.0],
+      annulusAreaRange: [273, 345],
+      annulusPerimeterRange: [58.5, 65.9],
+      annulusDiameterRange: [18.6, 20.9],
       sheathSize: '14F eSheath',
-      minVesselDiameter: 5.0,
+      minVesselDiameter: 5.5,
       notes: 'Ultra/RESILIA: textured PET outer skirt for reduced PVL. RESILIA tissue with INTEGRITY preservation.',
     },
     {
       size: 23,
-      annulusAreaRange: [314, 415],
-      annulusPerimeterRange: [63.0, 72.0],
-      annulusDiameterRange: [20.0, 23.0],
+      annulusAreaRange: [338, 430],
+      annulusPerimeterRange: [65.2, 73.6],
+      annulusDiameterRange: [20.7, 23.4],
       sheathSize: '14F eSheath',
       minVesselDiameter: 5.5,
     },
     {
       size: 26,
-      annulusAreaRange: [415, 531],
-      annulusPerimeterRange: [72.0, 81.0],
-      annulusDiameterRange: [23.0, 26.0],
-      sheathSize: '16F eSheath',
+      annulusAreaRange: [430, 546],
+      annulusPerimeterRange: [73.6, 82.8],
+      annulusDiameterRange: [23.4, 26.4],
+      sheathSize: '14F eSheath',
       minVesselDiameter: 5.5,
     },
     {
       size: 29,
-      annulusAreaRange: [531, 625],
-      annulusPerimeterRange: [81.0, 89.0],
-      annulusDiameterRange: [26.0, 29.0],
-      sheathSize: '16F eSheath',
+      annulusAreaRange: [540, 683],
+      annulusPerimeterRange: [82.3, 92.7],
+      annulusDiameterRange: [26.2, 29.5],
+      sheathSize: '14F eSheath',
       minVesselDiameter: 6.0,
     },
   ],
   generalNotes:
     'Balloon-expandable valve with textured outer skirt for enhanced paravalvular sealing. ' +
     'RESILIA tissue treated with INTEGRITY preservation for improved durability. ' +
-    'Distinct sizing from SAPIEN 3 (tighter annular ranges per Ultra RESILIA IFU). ' +
-    'Min vessel: 5.0mm (20mm), 5.5mm (23/26mm), 6.0mm (29mm). ' +
-    'Pacemaker rate ~6-8% (PARTNER 3).',
+    'Same annular sizing as SAPIEN 3 per IFU (DOC-0221054A). 14F eSheath for all sizes. ' +
+    'Min vessel: 5.5mm (20/23/26mm), 6.0mm (29mm). ' +
+    'Pacemaker rate ~5-7% (OCEAN-TAVI, S3U registries).',
 };
 
 // ── Medtronic Evolut PRO+ ───────────────────────────────────
@@ -160,17 +161,18 @@ export const EVOLUT_PRO_PLUS: TAVRValveModel = {
     },
     {
       size: 34,
-      annulusAreaRange: [531, 683],
+      annulusAreaRange: [531, 707],
       annulusDiameterRange: [26.0, 30.0],
-      annulusPerimeterRange: [81.7, 92.7],
-      sheathSize: '14F InLine',
-      minVesselDiameter: 5.0,
-      notes: 'Largest available TAVR valve; unique to Evolut platform',
+      annulusPerimeterRange: [81.7, 94.2],
+      sheathSize: '18F InLine',
+      minVesselDiameter: 6.0,
+      notes: 'Largest available TAVR valve; unique to Evolut platform. 18F InLine sheath requires 6.0mm min vessel.',
     },
   ],
   generalNotes:
     'Self-expanding supra-annular valve with outer pericardial wrap for reduced PVL. ' +
-    'Recapturable/repositionable delivery system. 14F InLine sheath (5.0mm min vessel) across all sizes. ' +
+    'Recapturable/repositionable delivery system. 14F InLine (5.0mm min vessel) for 23-29mm; ' +
+    '18F InLine (6.0mm min vessel) for 34mm. ' +
     'Pacemaker rate 17-20% (Evolut Low Risk). Higher PPM rate than balloon-expandable valves.',
 };
 
@@ -209,18 +211,19 @@ export const EVOLUT_FX: TAVRValveModel = {
     },
     {
       size: 34,
-      annulusAreaRange: [531, 683],
+      annulusAreaRange: [531, 707],
       annulusDiameterRange: [26.0, 30.0],
-      annulusPerimeterRange: [81.7, 92.7],
-      sheathSize: '14F InLine',
-      minVesselDiameter: 5.0,
+      annulusPerimeterRange: [81.7, 94.2],
+      sheathSize: '18F InLine',
+      minVesselDiameter: 6.0,
+      notes: '18F InLine sheath requires 6.0mm min vessel',
     },
   ],
   generalNotes:
     'Next-generation self-expanding valve with redesigned frame geometry for improved ' +
     'radial force distribution and sealing. Enhanced delivery system with improved stability ' +
-    'and precision. Same sizing as Evolut PRO+. Pacemaker rate ~14-17% (Evolut FX IDE), ' +
-    'lower than Evolut PRO+ (~17-20%) due to refined frame design.',
+    'and precision. Same sizing as Evolut PRO+. 14F InLine (5.0mm) for 23-29mm; 18F InLine (6.0mm) for 34mm. ' +
+    'Pacemaker rate ~14-17% (Evolut FX IDE), lower than Evolut PRO+ (~17-20%) due to refined frame design.',
 };
 
 // ── Abbott Navitor ──────────────────────────────────────────

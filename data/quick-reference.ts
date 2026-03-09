@@ -10,28 +10,28 @@ export interface VascularAccessThreshold {
 
 export const VASCULAR_ACCESS: VascularAccessThreshold[] = [
   {
-    device: "SAPIEN 3 (20mm)",
+    device: "SAPIEN 3 / Ultra / Ultra RESILIA (20mm)",
     manufacturer: "Edwards",
-    sheathOD: "14Fr eSheath (expands to 16Fr)",
-    minVesselDiameter: "5.0 mm",
-    notes: "Expandable sheath collapses after delivery",
+    sheathOD: "14Fr eSheath (Commander)",
+    minVesselDiameter: "5.5 mm",
+    notes: "14F eSheath for all SAPIEN 3 sizes",
   },
   {
-    device: "SAPIEN 3 (23mm)",
+    device: "SAPIEN 3 / Ultra / Ultra RESILIA (23mm)",
     manufacturer: "Edwards",
-    sheathOD: "14Fr eSheath (expands to 16Fr)",
+    sheathOD: "14Fr eSheath (Commander)",
     minVesselDiameter: "5.5 mm",
   },
   {
-    device: "SAPIEN 3 (26mm)",
+    device: "SAPIEN 3 / Ultra / Ultra RESILIA (26mm)",
     manufacturer: "Edwards",
-    sheathOD: "14Fr eSheath (expands to 18Fr)",
+    sheathOD: "14Fr eSheath (Commander)",
     minVesselDiameter: "5.5 mm",
   },
   {
-    device: "SAPIEN 3 (29mm)",
+    device: "SAPIEN 3 / Ultra / Ultra RESILIA (29mm)",
     manufacturer: "Edwards",
-    sheathOD: "16Fr eSheath (expands to 20Fr)",
+    sheathOD: "14Fr eSheath (Commander)",
     minVesselDiameter: "6.0 mm",
   },
   {
@@ -56,8 +56,9 @@ export const VASCULAR_ACCESS: VascularAccessThreshold[] = [
   {
     device: "Evolut PRO+ / FX (34mm)",
     manufacturer: "Medtronic",
-    sheathOD: "14Fr InLine",
-    minVesselDiameter: "5.0 mm",
+    sheathOD: "18Fr InLine",
+    minVesselDiameter: "6.0 mm",
+    notes: "34mm uses larger 18Fr InLine sheath",
   },
   {
     device: "Navitor (23mm)",
