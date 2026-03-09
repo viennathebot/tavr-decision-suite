@@ -75,10 +75,12 @@ export function NativeSizingTable({
               <th className="pb-2 pr-3">Model</th>
               <th className="pb-2 pr-3">Size</th>
               <th className="pb-2 pr-3">
-                Area Range (mm<sup>2</sup>)
+                Area (mm<sup>2</sup>)
               </th>
+              <th className="pb-2 pr-3">Perimeter (mm)</th>
               <th className="pb-2 pr-3">Sheath</th>
-              <th className="pb-2">Min Vessel</th>
+              <th className="pb-2 pr-3">Min Vessel</th>
+              <th className="pb-2">PPM Rate</th>
             </tr>
           </thead>
           <tbody>
@@ -99,11 +101,19 @@ export function NativeSizingTable({
                 <td className="py-2 pr-3 font-mono">
                   {item.size.annulusAreaRange[0]}-{item.size.annulusAreaRange[1]}
                 </td>
+                <td className="py-2 pr-3 font-mono">
+                  {item.size.annulusPerimeterRange
+                    ? `${item.size.annulusPerimeterRange[0]}-${item.size.annulusPerimeterRange[1]}`
+                    : "-"}
+                </td>
                 <td className="py-2 pr-3">{item.size.sheathSize ?? "-"}</td>
-                <td className="py-2 font-mono">
+                <td className="py-2 pr-3 font-mono">
                   {item.size.minVesselDiameter
                     ? `${item.size.minVesselDiameter} mm`
                     : "-"}
+                </td>
+                <td className="py-2 font-mono text-slate-400">
+                  {item.model.pacemakerRate ?? "-"}
                 </td>
               </tr>
             ))}
