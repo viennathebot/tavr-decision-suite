@@ -188,6 +188,10 @@ export function clavelClassify(input: {
  *
  * Men:   >=2000 AU = severe, 1200-1999 = likely severe, <1200 = unlikely severe
  * Women: >=1200 AU = severe, 800-1199 = likely severe,  <800  = unlikely severe
+ *
+ * Note: ACC/AHA 2020 uses Men >2000, Women >1300 (binary cutoffs).
+ * ESC 2021 uses Men >=2000, Women >=1200 (three-tier, matches Clavel).
+ * This implementation follows the Clavel/ESC three-tier system.
  */
 function interpretCalciumClavel(score: number, sex: 'male' | 'female'): ClavelCalciumResult {
   if (sex === 'male') {
