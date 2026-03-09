@@ -85,33 +85,33 @@ export const SAPIEN_3_ULTRA: TAVRValveModel = {
   sizes: [
     {
       size: 20,
-      annulusAreaRange: [273, 345],
-      annulusPerimeterRange: [58.5, 65.9],
-      annulusDiameterRange: [18.0, 21.0],
+      annulusAreaRange: [254, 314],
+      annulusPerimeterRange: [56.0, 63.0],
+      annulusDiameterRange: [18.0, 20.0],
       sheathSize: '14F eSheath',
       minVesselDiameter: 5.0,
-      notes: 'Ultra/RESILIA: textured PET outer skirt for reduced PVL',
+      notes: 'Ultra/RESILIA: textured PET outer skirt for reduced PVL. RESILIA tissue with INTEGRITY preservation.',
     },
     {
       size: 23,
-      annulusAreaRange: [338, 430],
-      annulusPerimeterRange: [65.2, 73.6],
-      annulusDiameterRange: [19.5, 23.0],
+      annulusAreaRange: [314, 415],
+      annulusPerimeterRange: [63.0, 72.0],
+      annulusDiameterRange: [20.0, 23.0],
       sheathSize: '14F eSheath',
       minVesselDiameter: 5.5,
     },
     {
       size: 26,
-      annulusAreaRange: [430, 546],
-      annulusPerimeterRange: [73.6, 82.8],
+      annulusAreaRange: [415, 531],
+      annulusPerimeterRange: [72.0, 81.0],
       annulusDiameterRange: [23.0, 26.0],
       sheathSize: '16F eSheath',
       minVesselDiameter: 5.5,
     },
     {
       size: 29,
-      annulusAreaRange: [546, 683],
-      annulusPerimeterRange: [82.8, 92.7],
+      annulusAreaRange: [531, 625],
+      annulusPerimeterRange: [81.0, 89.0],
       annulusDiameterRange: [26.0, 29.0],
       sheathSize: '16F eSheath',
       minVesselDiameter: 6.0,
@@ -120,7 +120,8 @@ export const SAPIEN_3_ULTRA: TAVRValveModel = {
   generalNotes:
     'Balloon-expandable valve with textured outer skirt for enhanced paravalvular sealing. ' +
     'RESILIA tissue treated with INTEGRITY preservation for improved durability. ' +
-    'Same sizing and delivery as SAPIEN 3. Min vessel: 5.0mm (20mm), 5.5mm (23/26mm), 6.0mm (29mm). ' +
+    'Distinct sizing from SAPIEN 3 (tighter annular ranges per Ultra RESILIA IFU). ' +
+    'Min vessel: 5.0mm (20mm), 5.5mm (23/26mm), 6.0mm (29mm). ' +
     'Pacemaker rate ~6-8% (PARTNER 3).',
 };
 
@@ -178,8 +179,8 @@ export const EVOLUT_FX: TAVRValveModel = {
   manufacturer: 'Medtronic',
   model: 'Evolut FX',
   selfExpanding: true,
-  pacemakerRate: '17-20%',
-  pacemakerRateCitation: 'Evolut Low Risk Trial (Popma JJ et al. NEJM 2019;380:1695-1705)',
+  pacemakerRate: '14-17%',
+  pacemakerRateCitation: 'Evolut FX US IDE Study; Forrest JK et al. JACC 2023',
   sizes: [
     {
       size: 23,
@@ -218,7 +219,8 @@ export const EVOLUT_FX: TAVRValveModel = {
   generalNotes:
     'Next-generation self-expanding valve with redesigned frame geometry for improved ' +
     'radial force distribution and sealing. Enhanced delivery system with improved stability ' +
-    'and precision. Same sizing as Evolut PRO+. Pacemaker rate ~17-20% (Evolut Low Risk).',
+    'and precision. Same sizing as Evolut PRO+. Pacemaker rate ~14-17% (Evolut FX IDE), ' +
+    'lower than Evolut PRO+ (~17-20%) due to refined frame design.',
 };
 
 // ── Abbott Navitor ──────────────────────────────────────────

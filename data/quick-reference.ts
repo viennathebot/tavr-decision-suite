@@ -110,18 +110,31 @@ export const PACEMAKER_RISK: PacemakerRisk[] = [
     source: "PARTNER 3, Jilaihawi et al. JACC 2019",
   },
   {
-    device: "Evolut PRO+ / FX",
+    device: "Evolut PRO+",
     manufacturer: "Medtronic",
-    ppmRate: "17-26%",
+    ppmRate: "17-20%",
     riskFactors: [
-      "Pre-existing RBBB",
+      "Pre-existing RBBB (strongest predictor)",
       "First-degree AV block",
       "Implant depth >6mm below annulus",
       "Greater oversizing",
       "Membranous septum length < implant depth",
       "Cusp overlap technique may reduce rate to 10-14%",
     ],
-    source: "Evolut Low Risk, Jilaihawi et al. JACC 2019",
+    source: "Evolut Low Risk (Popma JJ et al. NEJM 2019), Jilaihawi et al. JACC 2019",
+  },
+  {
+    device: "Evolut FX",
+    manufacturer: "Medtronic",
+    ppmRate: "14-17%",
+    riskFactors: [
+      "Pre-existing RBBB",
+      "First-degree AV block",
+      "Implant depth >6mm below annulus",
+      "Redesigned frame geometry may reduce conduction injury vs PRO+",
+      "Cusp overlap technique recommended",
+    ],
+    source: "Evolut FX US IDE Study (Forrest JK et al. JACC 2023)",
   },
   {
     device: "Navitor",
@@ -254,5 +267,105 @@ export const CLINICAL_THRESHOLDS: ClinicalThreshold[] = [
       { label: "Rapid pacing rate", value: "160-200 bpm" },
       { label: "Post-dilation threshold", value: "Moderate+ PVL" },
     ],
+  },
+  {
+    category: "CT Calcium Thresholds (Clavel 2014/2015)",
+    items: [
+      { label: "Men: Severe AS", value: "≥2000 AU", note: "Clavel JACC 2014" },
+      { label: "Men: Likely severe", value: "1200-1999 AU", note: "Indeterminate zone" },
+      { label: "Men: Unlikely severe", value: "<1200 AU" },
+      { label: "Women: Severe AS", value: "≥1200 AU", note: "Clavel JACC 2014" },
+      { label: "Women: Likely severe", value: "800-1199 AU", note: "Indeterminate zone" },
+      { label: "Women: Unlikely severe", value: "<800 AU" },
+    ],
+  },
+];
+
+// ── Paravalvular Leak (PVL) Rates by Device ───────────────────
+
+export interface PVLRate {
+  device: string;
+  manufacturer: string;
+  mildPVL: string;
+  moderateSeverePVL: string;
+  source: string;
+}
+
+export const PVL_RATES: PVLRate[] = [
+  {
+    device: "SAPIEN 3 / Ultra",
+    manufacturer: "Edwards",
+    mildPVL: "25-30%",
+    moderateSeverePVL: "0.5-1.5%",
+    source: "PARTNER 3 (Mack MJ et al. NEJM 2019); PARTNER 3 5yr (Leon MB et al. NEJM 2023)",
+  },
+  {
+    device: "Evolut PRO+",
+    manufacturer: "Medtronic",
+    mildPVL: "30-35%",
+    moderateSeverePVL: "1.5-3.5%",
+    source: "Evolut Low Risk (Popma JJ et al. NEJM 2019); Evolut Low Risk 4yr (Reardon MJ et al. JAMA 2023)",
+  },
+  {
+    device: "Evolut FX",
+    manufacturer: "Medtronic",
+    mildPVL: "25-30%",
+    moderateSeverePVL: "0.5-2.0%",
+    source: "Evolut FX US IDE (Forrest JK et al. JACC 2023)",
+  },
+  {
+    device: "Navitor",
+    manufacturer: "Abbott",
+    mildPVL: "20-28%",
+    moderateSeverePVL: "1.0-3.0%",
+    source: "Navitor CE Mark study, early registry data",
+  },
+  {
+    device: "Acurate neo2",
+    manufacturer: "Boston Scientific",
+    mildPVL: "25-32%",
+    moderateSeverePVL: "2.0-4.0%",
+    source: "SCOPE II (Lanz J et al. Lancet 2022)",
+  },
+];
+
+// ── Major Vascular Complication Rates ─────────────────────────
+
+export interface VascularComplicationRate {
+  device: string;
+  manufacturer: string;
+  majorVascularRate: string;
+  lifeThreateningBleeding: string;
+  source: string;
+}
+
+export const VASCULAR_COMPLICATION_RATES: VascularComplicationRate[] = [
+  {
+    device: "SAPIEN 3 / Ultra (14-16F eSheath)",
+    manufacturer: "Edwards",
+    majorVascularRate: "2.0-4.0%",
+    lifeThreateningBleeding: "1.0-2.5%",
+    source: "PARTNER 3 (Mack MJ et al. NEJM 2019)",
+  },
+  {
+    device: "Evolut PRO+ / FX (14F InLine)",
+    manufacturer: "Medtronic",
+    majorVascularRate: "2.5-4.5%",
+    lifeThreateningBleeding: "1.5-3.0%",
+    source: "Evolut Low Risk (Popma JJ et al. NEJM 2019)",
+  },
+  {
+    device: "Navitor (14F FlexNav)",
+    manufacturer: "Abbott",
+    majorVascularRate: "3.0-5.0%",
+    lifeThreateningBleeding: "1.5-3.5%",
+    source: "PORTICO IDE, early Navitor data",
+  },
+  {
+    device: "Acurate neo2 (14F)",
+    manufacturer: "Boston Scientific",
+    majorVascularRate: "2.5-4.5%",
+    lifeThreateningBleeding: "1.0-3.0%",
+    source: "SCOPE II (Lanz J et al. Lancet 2022)",
   },
 ];
