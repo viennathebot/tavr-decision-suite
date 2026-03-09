@@ -6,6 +6,8 @@ import {
   PACEMAKER_RISK,
   ANTIPLATELET_PROTOCOLS,
   CLINICAL_THRESHOLDS,
+  PVL_RATES,
+  VASCULAR_COMPLICATION_RATES,
 } from "@/data/quick-reference";
 
 export default function ReferencePage() {
@@ -91,6 +93,80 @@ export default function ReferencePage() {
                           </li>
                         ))}
                       </ul>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        {/* PVL Rates */}
+        <Card>
+          <h2 className="text-sm font-semibold text-slate-200 mb-3">
+            Paravalvular Leak (PVL) Rates by Device
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-slate-400 border-b border-navy-600">
+                  <th className="pb-2 pr-4">Device</th>
+                  <th className="pb-2 pr-4">Mild PVL</th>
+                  <th className="pb-2 pr-4">Moderate+ PVL</th>
+                  <th className="pb-2">Source</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PVL_RATES.map((item, i) => (
+                  <tr
+                    key={i}
+                    className="border-b border-navy-600/50 text-slate-300"
+                  >
+                    <td className="py-2 pr-4 font-medium">{item.device}</td>
+                    <td className="py-2 pr-4 font-mono">{item.mildPVL}</td>
+                    <td className="py-2 pr-4 font-mono text-gold">
+                      {item.moderateSeverePVL}
+                    </td>
+                    <td className="py-2 text-slate-500 text-[10px] max-w-[200px]">
+                      {item.source}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        {/* Vascular Complications */}
+        <Card>
+          <h2 className="text-sm font-semibold text-slate-200 mb-3">
+            Vascular Complications by Device
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-slate-400 border-b border-navy-600">
+                  <th className="pb-2 pr-4">Device</th>
+                  <th className="pb-2 pr-4">Major Vascular</th>
+                  <th className="pb-2 pr-4">Life-Threatening Bleeding</th>
+                  <th className="pb-2">Source</th>
+                </tr>
+              </thead>
+              <tbody>
+                {VASCULAR_COMPLICATION_RATES.map((item, i) => (
+                  <tr
+                    key={i}
+                    className="border-b border-navy-600/50 text-slate-300"
+                  >
+                    <td className="py-2 pr-4 font-medium">{item.device}</td>
+                    <td className="py-2 pr-4 font-mono text-gold">
+                      {item.majorVascularRate}
+                    </td>
+                    <td className="py-2 pr-4 font-mono">
+                      {item.lifeThreateningBleeding}
+                    </td>
+                    <td className="py-2 text-slate-500 text-[10px] max-w-[200px]">
+                      {item.source}
                     </td>
                   </tr>
                 ))}
