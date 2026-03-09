@@ -9,11 +9,13 @@ import {
   BookOpen,
   Ruler,
   ClipboardList,
+  HeartPulse,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/calculator", label: "Calculator", icon: Calculator },
   { href: "/algorithm", label: "Algorithm", icon: GitBranch },
+  { href: "/teer", label: "TEER", icon: HeartPulse },
   { href: "/valve-in-valve", label: "Valve-in-Valve", icon: Repeat },
   { href: "/evidence", label: "Evidence", icon: BookOpen },
   { href: "/sizing", label: "Sizing", icon: Ruler },
