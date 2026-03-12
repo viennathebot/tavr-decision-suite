@@ -270,6 +270,31 @@ export const CLINICAL_THRESHOLDS: ClinicalThreshold[] = [
     ],
   },
   {
+    category: "MR Severity (ACC/AHA 2020, Zoghbi 2017)",
+    items: [
+      { label: "Severe MR: EROA", value: "≥ 0.40 cm²", note: "Secondary MR: ≥0.30 per COAPT" },
+      { label: "Severe MR: RVol", value: "≥ 60 mL/beat" },
+      { label: "Severe MR: VC Width", value: "≥ 0.70 cm" },
+      { label: "Severe MR: RF", value: "≥ 50%" },
+      { label: "Severe MR: 3D VC Area", value: "≥ 0.40 cm²" },
+      { label: "Moderate MR: EROA", value: "0.20 – 0.39 cm²" },
+      { label: "Moderate MR: RVol", value: "30 – 59 mL/beat" },
+    ],
+  },
+  {
+    category: "TEER Eligibility (COAPT Criteria)",
+    items: [
+      { label: "LVEF", value: "20 – 50%", note: "<20% futility risk" },
+      { label: "LVESD", value: "≤ 70 mm" },
+      { label: "EROA (secondary MR)", value: "≥ 0.30 cm²", note: "COAPT threshold" },
+      { label: "MV Area (pre-clip)", value: "≥ 4.0 cm²", note: "Avoid iatrogenic MS" },
+      { label: "Flail gap", value: "< 10 mm", note: "EVEREST II criteria" },
+      { label: "Flail width", value: "< 15 mm" },
+      { label: "Coaptation depth", value: "< 11 mm" },
+      { label: "Coaptation length", value: "≥ 2 mm" },
+    ],
+  },
+  {
     category: "CT Calcium Thresholds (Clavel 2014/2015)",
     items: [
       { label: "Men: Severe AS", value: "≥2000 AU", note: "Clavel JACC 2014" },

@@ -55,8 +55,8 @@ export default function EvidencePage() {
     <div className="px-4 py-6 lg:px-8 max-w-4xl mx-auto">
       <h1 className="text-xl font-bold text-gold mb-2">Evidence Library</h1>
       <p className="text-xs text-slate-400 mb-6">
-        Curated evidence base for aortic stenosis evaluation, discordant grading,
-        and TAVR decision-making.
+        Curated evidence base for aortic stenosis, TAVR decision-making,
+        and TEER/MitraClip trials.
       </p>
 
       <FilterBar
