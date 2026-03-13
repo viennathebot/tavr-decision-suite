@@ -11,8 +11,13 @@ import {
   findTAVRForVIV,
   getSurgicalValveID,
 } from "@/data/viv-data";
-import { assessVIVRisks } from "@/lib/viv-calculations";
-import { AlertTriangle, CheckCircle, Info, RotateCcw } from "lucide-react";
+import {
+  assessVIVRisks,
+  recommendVIVValve,
+  shouldConsiderBVF,
+  predictedVIVEOA,
+} from "@/lib/viv-calculations";
+import { AlertTriangle, CheckCircle, Info, RotateCcw, Zap } from "lucide-react";
 
 const ACCESS_ROUTES = [
   "Transfemoral",
@@ -68,13 +73,16 @@ export function VIVCalculator() {
     return findTAVRForVIV(effectiveID);
   }, [effectiveID]);
 
-  // Risk flags
+  // Risk flags — now includes sinus width and BSA
   const riskFlags = useMemo(() => {
     return assessVIVRisks({
       surgicalValveLabeledSize: store.labeledSize,
       surgicalValveID: effectiveID,
       coronaryHeightLCA: store.coronaryHeightLCA,
       coronaryHeightRCA: store.coronaryHeightRCA,
+      sinusWidthLCA: store.sinusWidthLCA,
+      sinusWidthRCA: store.sinusWidthRCA,
+      patientBSA: store.patientBSA,
       failureMode: store.failureMode,
       procedureType: selectedValve?.stented === false ? "stentless" : undefined,
     });
@@ -83,9 +91,35 @@ export function VIVCalculator() {
     effectiveID,
     store.coronaryHeightLCA,
     store.coronaryHeightRCA,
+    store.sinusWidthLCA,
+    store.sinusWidthRCA,
+    store.patientBSA,
     store.failureMode,
     selectedValve,
   ]);
+
+  // THV Recommendations
+  const vivRecommendations = useMemo(() => {
+    if (!effectiveID) return [];
+    return recommendVIVValve(effectiveID, store.patientBSA);
+  }, [effectiveID, store.patientBSA]);
+
+  // Predicted post-VIV haemodynamics
+  const predictedEOA = useMemo(() => {
+    if (!effectiveID) return undefined;
+    return predictedVIVEOA(effectiveID);
+  }, [effectiveID]);
+
+  const predictedIEOA = useMemo(() => {
+    if (predictedEOA === undefined || !store.patientBSA) return undefined;
+    return predictedEOA / store.patientBSA;
+  }, [predictedEOA, store.patientBSA]);
+
+  // BVF decision
+  const bvfRecommended = useMemo(() => {
+    if (!store.labeledSize || predictedIEOA === undefined) return undefined;
+    return shouldConsiderBVF(store.labeledSize, predictedIEOA);
+  }, [store.labeledSize, predictedIEOA]);
 
   const riskIcon = (level: string) => {
     if (level === "high")
@@ -253,6 +287,36 @@ export function VIVCalculator() {
             max={40}
             step={0.1}
           />
+          <NumericInput
+            label="LCA Sinus Width"
+            value={store.sinusWidthLCA}
+            onChange={(v) => store.setField("sinusWidthLCA", v)}
+            unit="mm"
+            placeholder="30"
+            min={0}
+            max={50}
+            step={0.1}
+          />
+          <NumericInput
+            label="RCA Sinus Width"
+            value={store.sinusWidthRCA}
+            onChange={(v) => store.setField("sinusWidthRCA", v)}
+            unit="mm"
+            placeholder="32"
+            min={0}
+            max={50}
+            step={0.1}
+          />
+          <NumericInput
+            label="Patient BSA"
+            value={store.patientBSA}
+            onChange={(v) => store.setField("patientBSA", v)}
+            unit="m²"
+            placeholder="1.85"
+            min={0.5}
+            max={3.5}
+            step={0.01}
+          />
         </div>
       </Card>
 
@@ -280,6 +344,148 @@ export function VIVCalculator() {
           })}
         </div>
       </Card>
+
+      {/* Predicted Haemodynamics */}
+      {effectiveID && (
+        <Card>
+          <h2 className="text-sm font-semibold text-slate-200 mb-3">
+            Predicted Post-VIV Haemodynamics
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="rounded-lg bg-navy-700/50 border border-navy-600 p-3">
+              <span className="text-[10px] text-slate-500 block">
+                Predicted EOA
+              </span>
+              <span className="text-sm font-mono text-slate-200">
+                {predictedEOA !== undefined
+                  ? `${predictedEOA.toFixed(2)} cm²`
+                  : "—"}
+              </span>
+              <span className="text-[9px] text-slate-500 block mt-0.5">
+                65% coefficient model
+              </span>
+            </div>
+            <div className="rounded-lg bg-navy-700/50 border border-navy-600 p-3">
+              <span className="text-[10px] text-slate-500 block">
+                Predicted Indexed EOA
+              </span>
+              <span
+                className={`text-sm font-mono ${
+                  predictedIEOA !== undefined
+                    ? predictedIEOA < 0.65
+                      ? "text-red-400"
+                      : predictedIEOA < 0.85
+                        ? "text-amber-400"
+                        : "text-emerald-400"
+                    : "text-slate-200"
+                }`}
+              >
+                {predictedIEOA !== undefined
+                  ? `${predictedIEOA.toFixed(2)} cm²/m²`
+                  : store.patientBSA
+                    ? "—"
+                    : "Enter BSA"}
+              </span>
+              <span className="text-[9px] text-slate-500 block mt-0.5">
+                Severe PPM &lt;0.65, Moderate &lt;0.85
+              </span>
+            </div>
+            {bvfRecommended !== undefined && (
+              <div
+                className={`rounded-lg border p-3 ${
+                  bvfRecommended
+                    ? "bg-red-500/10 border-red-500/30"
+                    : "bg-emerald-500/10 border-emerald-500/30"
+                }`}
+              >
+                <span className="text-[10px] text-slate-500 block">
+                  BVF Recommendation
+                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {bvfRecommended ? (
+                    <>
+                      <Zap size={14} className="text-red-400" />
+                      <span className="text-sm font-medium text-red-400">
+                        Consider BVF
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={14} className="text-emerald-400" />
+                      <span className="text-sm font-medium text-emerald-400">
+                        BVF Not Required
+                      </span>
+                    </>
+                  )}
+                </div>
+                <span className="text-[9px] text-slate-500 block mt-0.5">
+                  Saxon JT et al. Struct Heart 2019
+                </span>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* THV Recommendations */}
+      {vivRecommendations.length > 0 && (
+        <Card>
+          <h2 className="text-sm font-semibold text-slate-200 mb-3">
+            THV Recommendations
+          </h2>
+          <div className="space-y-3">
+            {vivRecommendations.map((rec, i) => (
+              <div
+                key={i}
+                className={`rounded-lg border p-3 ${
+                  rec.considerBVF
+                    ? "bg-amber-500/5 border-amber-500/20"
+                    : "bg-navy-700/50 border-navy-600"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-slate-200">
+                    {rec.valveType}
+                  </span>
+                  <span className="text-sm font-mono text-gold">
+                    {rec.size}mm
+                  </span>
+                  {rec.predictedIndexedEOA !== undefined && (
+                    <Badge
+                      variant={
+                        rec.predictedIndexedEOA < 0.65
+                          ? "danger"
+                          : rec.predictedIndexedEOA < 0.85
+                            ? "warning"
+                            : "success"
+                      }
+                    >
+                      iEOA {rec.predictedIndexedEOA.toFixed(2)}
+                    </Badge>
+                  )}
+                  {rec.considerBVF && (
+                    <Badge variant="warning">BVF Recommended</Badge>
+                  )}
+                </div>
+                <ul className="space-y-0.5">
+                  {rec.notes.map((note, j) => (
+                    <li
+                      key={j}
+                      className="text-[10px] text-slate-400 pl-3 relative before:absolute before:left-0 before:top-1.5 before:w-1 before:h-1 before:rounded-full before:bg-slate-600"
+                    >
+                      {note}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="text-[9px] text-slate-500 mt-2">
+            Dvir D et al. JACC 2012;59:2317-2327; Pibarot P et al. JACC
+            2014;63:1154-1156
+          </p>
+        </Card>
+      )}
 
       {/* Risk Flags */}
       {riskFlags.length > 0 && (

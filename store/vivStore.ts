@@ -11,7 +11,10 @@ export interface VIVState {
   ctAnnulusDiameter?: number;
   coronaryHeightLCA?: number;
   coronaryHeightRCA?: number;
+  sinusWidthLCA?: number;
+  sinusWidthRCA?: number;
   ctInnerDiameter?: number;
+  patientBSA?: number;
   accessRoutes: string[];
 
   setProcedureType: (t: "tavr-in-savr" | "tavr-in-tavr") => void;
@@ -52,7 +55,10 @@ export const useVIVStore = create<VIVState>()((set) => ({
       ctAnnulusDiameter: undefined,
       coronaryHeightLCA: undefined,
       coronaryHeightRCA: undefined,
+      sinusWidthLCA: undefined,
+      sinusWidthRCA: undefined,
       ctInnerDiameter: undefined,
+      patientBSA: undefined,
       accessRoutes: [],
     }),
 }));
