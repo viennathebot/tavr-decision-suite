@@ -10,11 +10,13 @@ import {
   Ruler,
   ClipboardList,
   HeartPulse,
+  Scan,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/calculator", label: "Calculator", icon: Calculator },
   { href: "/algorithm", label: "Algorithm", icon: GitBranch },
+  { href: "/calcium", label: "Calcium", icon: Scan },
   { href: "/teer", label: "TEER", icon: HeartPulse },
   { href: "/valve-in-valve", label: "Valve-in-Valve", icon: Repeat },
   { href: "/evidence", label: "Evidence", icon: BookOpen },
